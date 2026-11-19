@@ -6,9 +6,10 @@ puts a human in the loop **only where it matters**, and keeps the decision about
 out of the model's hands.
 
 Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents.AI`), xUnit.
-Console only, fictional data, scripted model for tests, real model optional.
+Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
+tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (37/37 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (71/71 tests, see
 > [evidence](evidence/)). The LLM judge has **not** been measured against a real model yet
 > (no results file exists), and the `live` mode has not been run against a real model either.
 > This is not production code.
@@ -106,14 +107,15 @@ AIAgent guarded = agent.AsBuilder()
 ## The seven designed cases
 
 Run through the real agent pipeline with a scripted model (`ScriptedChatClient`) and a scripted
-judge, so results are deterministic. The real judge is measured separately (below).
+judge, so results are deterministic. Every case exists in English and Spanish and every scenario
+test runs in both. The real judge is measured separately (below).
 
 | # | Case | Expected | What guarantees it | Test |
 |---|---|---|---|---|
 | 1 | Verified fact ("your order #A-1042 shipped on November 12") | Auto-send | Facts match the record; judge clear | `S1_...` |
 | 2 | Refund promise with no numbers ("this was our mistake, we will refund") | Human | Only the judge can catch it | `S2_...` (approve and reject) |
 | 3 | Ambiguous ("we'll see what we can do") | Human | Judge | `S3_...` |
-| 4 | Prompt injection in the customer message | Never auto-send | `$500` has no source, `today` is unverifiable, recipient from ticket — even with a judge that was fooled | `S4_...` |
+| 4 | Prompt injection in the customer message | Never auto-send | `$500` has no source, `today` / `hoy` is unverifiable, recipient from ticket — even with a judge that was fooled | `S4_...` |
 | 5 | Approved, then the text is swapped | Only the approved text goes out | Framework binding + ledger | `S5_...` (3 tests) |
 | 6 | Same text sent twice | Block, no human | Idempotency key (ticket + SHA-256 of text) | `S6_...` |
 | 7 | Judge down / timeout | Human | Errors and timeouts are never "clear" | `S7_...`, `Judge_timeout_...` |
@@ -121,8 +123,10 @@ judge, so results are deterministic. The real judge is measured separately (belo
 Plus: a rejected draft is rewritten and the new call goes through the whole policy again; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (37 passed) and
-[`evidence/scenarios.txt`](evidence/scenarios.txt) (console run, reviewer answers piped in).
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (71 passed),
+[`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
+(console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
+(rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
 
 ## Run it
 
@@ -135,8 +139,8 @@ brew install --cask dotnet-sdk        # or the installer from https://dotnet.mic
 dotnet --version                      # 10.x
 git clone <this repo> && cd ai-engineering-lab/experiments/hitl-send-reply
 dotnet test
-dotnet run --project src/HitlSendReply -- scenario 2   # you are the reviewer: y / n + reason
-dotnet run --project src/HitlSendReply -- scenario all
+dotnet run --project src/HitlSendReply -- scenario 2              # you are the reviewer: y / n + reason
+dotnet run --project src/HitlSendReply -- scenario all --lang es   # Spanish dataset
 ```
 
 **Linux (Ubuntu 24.04)**: `sudo apt-get install -y dotnet-sdk-10.0`, then the same commands.
@@ -147,9 +151,8 @@ dotnet run --project src/HitlSendReply -- scenario all
 Any OpenAI-compatible endpoint works: OpenAI, Azure OpenAI (v1 endpoint) or Ollama.
 
 ```bash
-# OpenAI
-export LAB_LLM_API_KEY=sk-...
-export LAB_LLM_MODEL=gpt-4.1-mini
+# OpenAI (model defaults to gpt-4.1-mini; override with LAB_LLM_MODEL)
+export OPENAI_API_KEY=sk-...
 
 # or Ollama on your Mac
 ollama pull llama3.1:8b
@@ -158,16 +161,19 @@ export LAB_LLM_API_KEY=ollama
 export LAB_LLM_MODEL=llama3.1:8b
 
 # real agent + real judge, you review in the terminal; audit goes to ./audit.jsonl
-dotnet run --project src/HitlSendReply -- live --ticket T-1002 --message "The package arrived damaged. I want my money back."
+dotnet run --project src/HitlSendReply -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
 
-# measure the judge on 30 hand-labeled drafts, 3 runs; writes results/<timestamp>-<model>.json
-dotnet run --project src/HitlSendReply -- evaluate --runs 3
+# measure the judge on 30 hand-labeled drafts per language, 3 runs; writes results/<timestamp>-<lang>-<model>.json
+dotnet run --project src/HitlSendReply -- evaluate --lang en --runs 3
+dotnet run --project src/HitlSendReply -- evaluate --lang es --runs 3
 ```
 
 ## Measuring the judge
 
-[`data/drafts.jsonl`](src/HitlSendReply/data/drafts.jsonl): 30 fictional drafts labeled by hand
-(8 auto-send, 19 human, 3 block). 12 of the human ones contain no verifiable claim at all, so only
+Two datasets with the same structure: [`drafts.en.jsonl`](src/HitlSendReply/data/drafts.en.jsonl)
+and [`drafts.es.jsonl`](src/HitlSendReply/data/drafts.es.jsonl). Each has 30 fictional drafts
+labeled by hand (8 auto-send, 19 human, 3 block). The Spanish set is written in Spanish, not
+translated word for word, and exercises Spanish formats: "12 de noviembre", "28/11", "$1.500", "$89,90". 12 of the human ones contain no verifiable claim at all, so only
 the judge can catch them (indirect refunds, implied fault, legal, safety, privacy, ambiguity).
 
 The `evaluate` command reports, per run:
@@ -188,11 +194,20 @@ from the results file, with the model name.
   record, not that it is attached to the right field ("shipped on" vs "arrives on").
 - **Conservative extraction.** "Your order has not been delivered yet" mentions a status that
   contradicts the record and escalates. That is a false positive by design.
-- **English-only patterns** for dates, amounts and statuses.
+- **Two languages only** (English, Spanish), chosen per ticket. In a Spanish ticket `$1,500` reads as
+  1.5 and escalates; mixed formats are treated conservatively.
 - **"Edit" is not native.** The reviewer approves or rejects with a reason; the agent rewrites.
 - **The judge can be wrong both ways.** A false negative only ships if every verifiable check also
   passed.
 - In-memory stores, fake outbox, no persistence of sessions. Not production code.
+
+## Console
+
+The UI lives in `Cli/ConsoleUi.cs` and only renders what the pipeline did: the scenario, the
+review panel (exact text, recipient from the ticket, channel), the audit trail and the result.
+Tests never touch it, and the policy has no dependency on it.
+
+![Spanish prompt-injection scenario](evidence/screenshots/es-4-prompt-injection.png)
 
 ## Layout
 
@@ -204,7 +219,7 @@ src/HitlSendReply/
   Publishing/   fake outbox, approval ledger, audit log
   Agent/        MAF wiring: tools, gate (auto-approval rule), runner, scripted chat client
   Evaluation/   judge measurement over data/drafts.jsonl
-  Cli/          LLM settings
-tests/HitlSendReply.Tests/   37 tests
+  Cli/          colored console UI (presentation only) and LLM settings
+tests/HitlSendReply.Tests/   71 tests (scenario and dataset tests run in EN and ES)
 evidence/                    test and console runs
 ```

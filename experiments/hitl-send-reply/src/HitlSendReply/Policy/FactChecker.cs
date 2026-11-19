@@ -10,71 +10,49 @@ public sealed record FactCheckResult(IReadOnlyList<string> Issues)
 }
 
 /// <summary>
-/// Extracts the claims a reply makes about the order (order id, dates, amounts, status) and
-/// compares them with the system of record. It does not trust the model to declare its claims.
-/// Anything it cannot extract or verify is reported as an issue, which sends the draft to a human.
+/// Extracts the claims a reply makes about the order (order id, dates, amounts, status, time
+/// commitments) and compares them with the system of record. It does not trust the model to
+/// declare its claims. Anything it cannot extract or verify is an issue, which sends the draft
+/// to a human.
 /// </summary>
 /// <remarks>
 /// Deliberately narrow: it checks that a stated value exists in the record, not that it is
-/// attached to the right field ("shipped on" vs "arrives on"). That gap is covered by the judge
-/// and documented as a limitation.
+/// attached to the right field ("shipped on" vs "arrives on"). That gap is documented as a limitation.
 /// </remarks>
-public static partial class FactChecker
+public static class FactChecker
 {
-    private static readonly (Regex Pattern, OrderStatus Status)[] StatusPhrases =
-    [
-        (StatusRegex(@"\b(?:has been |was |is )?(?:shipped|dispatched)\b"), OrderStatus.Shipped),
-        (StatusRegex(@"\b(?:has been |was )?delivered\b"), OrderStatus.Delivered),
-        (StatusRegex(@"\b(?:is )?(?:being prepared|being processed|processing)\b"), OrderStatus.Processing),
-        (StatusRegex(@"\b(?:has been |was )?(?:cancell?ed)\b"), OrderStatus.Cancelled),
-    ];
-
-    public static FactCheckResult Check(string text, Order order)
+    public static FactCheckResult Check(string text, Order order, Language language = Language.En)
     {
+        var rules = ClaimPatterns.For(language);
         var issues = new List<string>();
         var masked = text;
 
-        masked = Consume(masked, OrderRefRegex(), m =>
+        masked = Consume(masked, ClaimPatterns.OrderRef, m =>
         {
             if (!string.Equals(m.Groups["id"].Value, order.Id, StringComparison.OrdinalIgnoreCase))
                 issues.Add($"Order reference '{m.Value}' does not match the ticket's order #{order.Id}.");
         });
 
-        masked = Consume(masked, IsoDateRegex(), m =>
+        masked = Consume(masked, ClaimPatterns.IsoDate, m =>
+            CheckDate(DateOnly.TryParseExact(m.Value, "yyyy-MM-dd", out var d) ? d : null, m.Value, order, issues));
+
+        foreach (var datePattern in rules.Dates)
         {
-            var date = DateOnly.ParseExact(m.Value, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-            CheckDate(date, m.Value, order, issues);
-        });
+            masked = Consume(masked, datePattern, m =>
+                CheckDate(ClaimPatterns.ToDate(m, rules, order), m.Value, order, issues));
+        }
 
-        masked = Consume(masked, MonthDayRegex(), m =>
+        masked = Consume(masked, rules.Money, m =>
         {
-            var month = DateTime.ParseExact(m.Groups["month"].Value[..3], "MMM", CultureInfo.InvariantCulture).Month;
-            var day = int.Parse(m.Groups["day"].Value, CultureInfo.InvariantCulture);
-            var year = m.Groups["year"].Success
-                ? int.Parse(m.Groups["year"].Value, CultureInfo.InvariantCulture)
-                : (order.ShippedOn ?? order.EstimatedDelivery)?.Year ?? DateTime.UtcNow.Year;
-
-            if (!DateOnly.TryParseExact($"{year:D4}-{month:D2}-{day:D2}", "yyyy-MM-dd", out var date))
-            {
-                issues.Add($"'{m.Value}' is not a valid date.");
-                return;
-            }
-
-            CheckDate(date, m.Value, order, issues);
-        });
-
-        masked = Consume(masked, MoneyRegex(), m =>
-        {
-            var raw = m.Groups["amount"].Value.Replace(",", "", StringComparison.Ordinal);
-            var amount = decimal.Parse(raw, CultureInfo.InvariantCulture);
+            var amount = ClaimPatterns.ParseAmount(m.Groups["amount"].Value, language);
             if (amount != order.Total)
-                issues.Add($"Amount '{m.Value}' has no source in the order record (total is {order.Total:0.00} {order.Currency}).");
+                issues.Add($"Amount '{m.Value.Trim()}' has no source in the order record (total is {order.Total:0.00} {order.Currency}).");
         });
 
-        masked = Consume(masked, RelativeTimeRegex(), m =>
-            issues.Add($"Time commitment '{m.Value}' cannot be verified against the record."));
+        masked = Consume(masked, rules.RelativeTime, m =>
+            issues.Add($"Time commitment '{m.Value.Trim()}' cannot be verified against the record."));
 
-        foreach (var (pattern, status) in StatusPhrases)
+        foreach (var (pattern, status) in rules.Statuses)
         {
             masked = Consume(masked, pattern, m =>
             {
@@ -84,16 +62,18 @@ public static partial class FactChecker
         }
 
         // Anything numeric left over is a claim we could not parse: escalate rather than guess.
-        foreach (Match m in LeftoverNumberRegex().Matches(masked))
+        foreach (Match m in ClaimPatterns.LeftoverNumber.Matches(masked))
             issues.Add($"Unverifiable number '{m.Value}'.");
 
         return new FactCheckResult(issues);
     }
 
-    private static void CheckDate(DateOnly date, string raw, Order order, List<string> issues)
+    private static void CheckDate(DateOnly? date, string raw, Order order, List<string> issues)
     {
-        if (date != order.ShippedOn && date != order.EstimatedDelivery)
-            issues.Add($"Date '{raw}' does not match any date in the order record.");
+        if (date is null)
+            issues.Add($"'{raw.Trim()}' is not a valid date.");
+        else if (date != order.ShippedOn && date != order.EstimatedDelivery)
+            issues.Add($"Date '{raw.Trim()}' does not match any date in the order record.");
     }
 
     private static string Consume(string text, Regex regex, Action<Match> onMatch)
@@ -102,25 +82,104 @@ public static partial class FactChecker
             onMatch(m);
         return regex.Replace(text, " ");
     }
+}
 
-    private static Regex StatusRegex(string pattern) =>
-        new(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+/// <summary>Per-language claim patterns. Adding a language means adding one instance here.</summary>
+internal sealed class ClaimPatterns
+{
+    private const RegexOptions Opts = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
-    [GeneratedRegex(@"#(?<id>[A-Z0-9][A-Z0-9-]*)", RegexOptions.IgnoreCase)]
-    private static partial Regex OrderRefRegex();
+    public static readonly Regex OrderRef = new(@"#(?<id>[A-Z0-9][A-Z0-9-]*)", Opts);
+    public static readonly Regex IsoDate = new(@"\b\d{4}-\d{2}-\d{2}\b", Opts);
+    public static readonly Regex LeftoverNumber = new(@"\d+(?:[.,]\d+)?", Opts);
 
-    [GeneratedRegex(@"\b\d{4}-\d{2}-\d{2}\b")]
-    private static partial Regex IsoDateRegex();
+    public required IReadOnlyList<Regex> Dates { get; init; }
+    public required IReadOnlyDictionary<string, int> Months { get; init; }
+    public required Regex Money { get; init; }
+    public required Regex RelativeTime { get; init; }
+    public required IReadOnlyList<(Regex Pattern, OrderStatus Status)> Statuses { get; init; }
 
-    [GeneratedRegex(@"\b(?<month>Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+(?<day>\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(?<year>\d{4}))?\b", RegexOptions.IgnoreCase)]
-    private static partial Regex MonthDayRegex();
+    public static ClaimPatterns For(Language language) => language == Language.Es ? Spanish : English;
 
-    [GeneratedRegex(@"(?:[$€£]\s?(?<amount>\d[\d,]*(?:\.\d{1,2})?))|(?:(?<amount>\d[\d,]*(?:\.\d{1,2})?)\s?(?:USD|EUR|dollars?|euros?)\b)", RegexOptions.IgnoreCase)]
-    private static partial Regex MoneyRegex();
+    private static readonly ClaimPatterns English = new()
+    {
+        Months = MonthMap("january february march april may june july august september october november december", prefix: 3),
+        Dates =
+        [
+            new(@"\b(?<month>Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+(?<day>\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(?<year>\d{4}))?\b", Opts),
+        ],
+        Money = new(@"(?:[$€£]\s?(?<amount>\d[\d,]*(?:\.\d{1,2})?))|(?:(?<amount>\d[\d,]*(?:\.\d{1,2})?)\s?(?:USD|EUR|dollars?|euros?)\b)", Opts),
+        RelativeTime = new(@"\b(?:today|tonight|tomorrow|right away|immediately|asap|as soon as possible|this week|within\s+\w+(?:\s+\w+)?|in\s+(?:a|an|one|two|three|four|five|a few|a couple of)\s+(?:hours?|days?|weeks?)|next\s+(?:week|month|business day|monday|tuesday|wednesday|thursday|friday)|by\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|end of (?:day|week)))\b", Opts),
+        Statuses =
+        [
+            (new(@"\b(?:has been |was |is )?(?:shipped|dispatched)\b", Opts), OrderStatus.Shipped),
+            (new(@"\b(?:has been |was )?delivered\b", Opts), OrderStatus.Delivered),
+            (new(@"\b(?:is )?(?:being prepared|being processed|processing)\b", Opts), OrderStatus.Processing),
+            (new(@"\b(?:has been |was )?cancell?ed\b", Opts), OrderStatus.Cancelled),
+        ],
+    };
 
-    [GeneratedRegex(@"\b(?:today|tonight|tomorrow|right away|immediately|asap|as soon as possible|within\s+\w+(?:\s+\w+)?|next\s+(?:week|month|business day)|by\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|end of (?:day|week)))\b", RegexOptions.IgnoreCase)]
-    private static partial Regex RelativeTimeRegex();
+    private static readonly ClaimPatterns Spanish = new()
+    {
+        Months = MonthMap("enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre", prefix: 0),
+        Dates =
+        [
+            new(@"\b(?<day>\d{1,2})\s+de\s+(?<month>enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+(?:de|del)\s+(?<year>\d{4}))?\b", Opts),
+            new(@"\b(?<day>\d{1,2})/(?<monthnum>\d{1,2})(?:/(?<year>\d{4}))?\b", Opts),
+        ],
+        // "$1.500", "$89,90", "89,90 USD", "1.500 pesos", "20 €"
+        Money = new(@"(?:[$€£]\s?(?<amount>\d[\d.]*(?:,\d{1,2})?))|(?:(?<amount>\d[\d.]*(?:,\d{1,2})?)\s?(?:USD|EUR|€|d[oó]lares|euros|pesos)(?!\w))", Opts),
+        RelativeTime = new(@"(?<!\w)(?:hoy|esta noche|mañana|pasado mañana|de inmediato|inmediatamente|enseguida|lo antes posible|cuanto antes|esta semana|dentro de\s+\w+(?:\s+\w+)?|en\s+(?:un|una|uno|dos|tres|cuatro|cinco|unos|unas|pocos|pocas)\s+(?:horas?|d[ií]as?|semanas?)|la\s+pr[oó]xima\s+semana|el\s+pr[oó]ximo\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|mes)|antes\s+del?\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|fin de semana))(?!\w)", Opts),
+        Statuses =
+        [
+            (new(@"(?<!\w)(?:se\s+despach[oó]|(?:fue|ha sido|est[aá])\s+(?:despachado|enviado)|despachado|enviado)(?!\w)", Opts), OrderStatus.Shipped),
+            (new(@"(?<!\w)(?:se\s+entreg[oó]|(?:fue|ha sido)\s+entregado|entregado)(?!\w)", Opts), OrderStatus.Delivered),
+            (new(@"(?<!\w)(?:en\s+preparaci[oó]n|se\s+est[aá]\s+(?:preparando|procesando)|en\s+proceso)(?!\w)", Opts), OrderStatus.Processing),
+            (new(@"(?<!\w)(?:se\s+cancel[oó]|(?:fue|ha sido)\s+cancelado|cancelado)(?!\w)", Opts), OrderStatus.Cancelled),
+        ],
+    };
 
-    [GeneratedRegex(@"\d+(?:[.,]\d+)?")]
-    private static partial Regex LeftoverNumberRegex();
+    public static DateOnly? ToDate(Match m, ClaimPatterns rules, Order order)
+    {
+        int month;
+        if (m.Groups["monthnum"].Success)
+            month = int.Parse(m.Groups["monthnum"].Value, CultureInfo.InvariantCulture);
+        else
+        {
+            var name = m.Groups["month"].Value.ToLowerInvariant();
+            if (name == "setiembre") name = "septiembre";
+            if (!rules.Months.TryGetValue(name, out month) && !rules.Months.TryGetValue(name[..Math.Min(3, name.Length)], out month))
+                return null;
+        }
+
+        var day = int.Parse(m.Groups["day"].Value, CultureInfo.InvariantCulture);
+        var year = m.Groups["year"].Success
+            ? int.Parse(m.Groups["year"].Value, CultureInfo.InvariantCulture)
+            : (order.ShippedOn ?? order.EstimatedDelivery)?.Year ?? DateTime.UtcNow.Year;
+
+        return month is >= 1 and <= 12 && day >= 1 && day <= DateTime.DaysInMonth(year, month)
+            ? new DateOnly(year, month, day)
+            : null;
+    }
+
+    /// <summary>English: "1,500.50". Spanish: "1.500,50" (a dot followed by exactly 3 digits is a thousands separator).</summary>
+    public static decimal ParseAmount(string raw, Language language)
+    {
+        var normalized = language == Language.Es
+            ? Regex.Replace(raw, @"\.(?=\d{3}(?:\D|$))", "").Replace(',', '.')
+            : raw.Replace(",", "", StringComparison.Ordinal);
+        return decimal.Parse(normalized, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+    }
+
+    private static Dictionary<string, int> MonthMap(string names, int prefix)
+    {
+        var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var list = names.Split(' ');
+        for (var i = 0; i < list.Length; i++)
+        {
+            map[list[i]] = i + 1;
+            if (prefix > 0) map[list[i][..prefix]] = i + 1;
+        }
+        return map;
+    }
 }

@@ -21,7 +21,7 @@ public sealed class SupportTools(ITicketStore tickets, FakeOutbox outbox, Approv
 
         var o = ticket.Order;
         return string.Create(CultureInfo.InvariantCulture,
-            $"Ticket {ticket.Id}. Order #{o.Id}. Status: {o.Status}. Shipped on: {o.ShippedOn?.ToString("yyyy-MM-dd") ?? "not shipped"}. " +
+            $"Ticket {ticket.Id}. Reply language: {(ticket.Language == Language.Es ? "Spanish" : "English")}. Order #{o.Id}. Status: {o.Status}. Shipped on: {o.ShippedOn?.ToString("yyyy-MM-dd") ?? "not shipped"}. " +
             $"Estimated delivery: {o.EstimatedDelivery?.ToString("yyyy-MM-dd") ?? "unknown"}. Total: {o.Total:0.00} {o.Currency}.");
     }
 

@@ -5,7 +5,7 @@ namespace HitlSendReply.Tests;
 
 public class FactCheckerTests
 {
-    private static readonly Order Shipped = SampleTickets.Shipped.Order; // #A-1042, shipped 2026-11-12, ETA 2026-11-21, 129.90
+    private static readonly Order Shipped = SampleTickets.Get("T-1001").Order; // #A-1042, shipped 2026-11-12, ETA 2026-11-21, 129.90
 
     [Theory]
     [InlineData("According to our system, your order #A-1042 shipped on November 12.")]

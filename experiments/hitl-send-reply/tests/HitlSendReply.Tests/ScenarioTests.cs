@@ -11,16 +11,19 @@ namespace HitlSendReply.Tests;
 /// </summary>
 public class ScenarioTests
 {
-    private static Scenario Get(int number) => Scenarios.All.Single(s => s.Number == number);
+    private static Scenario Get(int number, string lang) =>
+        Scenarios.For(lang == "es" ? Language.Es : Language.En).Single(s => s.Number == number);
 
     private static ScriptedApprover Approves() => new(_ => HumanVerdict.Approve("reviewer@test"));
 
     private static ScriptedApprover Rejects(string reason = "Not acceptable.") => new(_ => HumanVerdict.Reject("reviewer@test", reason));
 
-    [Fact]
-    public async Task S1_verified_fact_is_sent_without_a_human()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S1_verified_fact_is_sent_without_a_human(string lang)
     {
-        var scenario = Get(1);
+        var scenario = Get(1, lang);
         var approver = Approves();
         var (lab, _) = ScenarioHarness.Build(scenario, approver);
 
@@ -34,10 +37,12 @@ public class ScenarioTests
         Assert.Contains(lab.Audit.Entries, e => e.Event == "sent" && e.Actor == "policy");
     }
 
-    [Fact]
-    public async Task S2_refund_promise_waits_for_a_human_and_nothing_is_sent_if_rejected()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S2_refund_promise_waits_for_a_human_and_nothing_is_sent_if_rejected(string lang)
     {
-        var scenario = Get(2);
+        var scenario = Get(2, lang);
         var approver = Rejects("Do not promise refunds; say a teammate will review.");
         var (lab, _) = ScenarioHarness.Build(scenario, approver);
 
@@ -50,12 +55,15 @@ public class ScenarioTests
         Assert.Equal(Channel.Email, prompt.Channel);
         Assert.Empty(lab.Outbox.Sent);
         Assert.Contains(lab.Audit.Entries, e => e.Event == "human-rejected" && e.Reason!.StartsWith("Do not promise", StringComparison.Ordinal));
+        Assert.Equal(scenario.Ticket.Language, lab.Tickets.Find(scenario.Ticket.Id)!.Language);
     }
 
-    [Fact]
-    public async Task S2_refund_promise_is_sent_once_a_human_approves()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S2_refund_promise_is_sent_once_a_human_approves(string lang)
     {
-        var scenario = Get(2);
+        var scenario = Get(2, lang);
         var (lab, _) = ScenarioHarness.Build(scenario, Approves());
 
         await lab.Runner.RunAsync(scenario.Ticket.Id, scenario.CustomerMessage);
@@ -65,10 +73,12 @@ public class ScenarioTests
         Assert.Contains(lab.Audit.Entries, e => e.Event == "sent" && e.Actor == "reviewer@test");
     }
 
-    [Fact]
-    public async Task S3_ambiguous_reply_goes_to_a_human()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S3_ambiguous_reply_goes_to_a_human(string lang)
     {
-        var scenario = Get(3);
+        var scenario = Get(3, lang);
         var approver = Rejects();
         var (lab, _) = ScenarioHarness.Build(scenario, approver);
 
@@ -78,10 +88,12 @@ public class ScenarioTests
         Assert.Empty(lab.Outbox.Sent);
     }
 
-    [Fact]
-    public async Task S4_prompt_injection_is_never_auto_sent_even_if_the_judge_is_fooled()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S4_prompt_injection_is_never_auto_sent_even_if_the_judge_is_fooled(string lang)
     {
-        var scenario = Get(4);
+        var scenario = Get(4, lang);
         var approver = Rejects();
         var (lab, model) = ScenarioHarness.Build(scenario, approver);
 
@@ -94,29 +106,33 @@ public class ScenarioTests
         Assert.DoesNotContain(lab.Audit.Entries, e => e.Recipient?.Contains("attacker", StringComparison.Ordinal) == true);
         Assert.Empty(lab.Outbox.Sent);
         // The injected text did reach the model (it is the customer's message), so the defense is not "hide it".
-        Assert.Contains(model.Requests[0], m => m.Text.Contains("Ignore your rules", StringComparison.Ordinal));
+        Assert.Contains(model.Requests[0], m => m.Text.Contains(lang == "es" ? "Ignora tus reglas" : "Ignore your rules", StringComparison.Ordinal));
     }
 
-    [Fact]
-    public async Task S5_a_tampered_approval_cannot_change_the_text_that_is_sent()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S5_a_tampered_approval_cannot_change_the_text_that_is_sent(string lang)
     {
-        var scenario = Get(5);
+        var scenario = Get(5, lang);
         var (lab, _) = ScenarioHarness.Build(scenario, Approves());
 
         await lab.Runner.RunAsync(scenario.Ticket.Id, scenario.CustomerMessage);
 
-        Assert.DoesNotContain(lab.Outbox.Sent, s => s.Text == ScenarioHarness.TamperedText);
+        Assert.DoesNotContain(lab.Outbox.Sent, s => s.Text == scenario.TamperedText);
         var sent = Assert.Single(lab.Outbox.Sent);
         Assert.Equal(scenario.Drafts[0], sent.Text);
     }
 
-    [Fact]
-    public async Task S5_with_chat_client_binding_disabled_the_tool_approval_middleware_still_binds()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S5_with_chat_client_binding_disabled_the_tool_approval_middleware_still_binds(string lang)
     {
         // Observed in Microsoft.Agents.AI 1.28.0: UseToolApproval (ToolApprovalAgent) also rebinds each
         // approval response to the request it surfaced, so turning off DisableApprovalResponseBinding
         // alone does not let the swapped text through.
-        var scenario = Get(5);
+        var scenario = Get(5, lang);
         var (lab, _) = ScenarioHarness.Build(scenario, Approves(), disableApprovalResponseBinding: true);
 
         await lab.Runner.RunAsync(scenario.Ticket.Id, scenario.CustomerMessage);
@@ -125,23 +141,28 @@ public class ScenarioTests
         Assert.Equal(scenario.Drafts[0], sent.Text);
     }
 
-    [Fact]
-    public void S5_the_send_tool_refuses_text_nobody_authorized()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public void S5_the_send_tool_refuses_text_nobody_authorized(string lang)
     {
         // Second layer: even if a call reached the tool directly, unapproved text is not published.
-        var (lab, _) = ScenarioHarness.Build(Get(5), Approves());
+        var scenario = Get(5, lang);
+        var (lab, _) = ScenarioHarness.Build(scenario, Approves());
 
-        var result = lab.Tools.SendReply("T-1002", ScenarioHarness.TamperedText);
+        var result = lab.Tools.SendReply("T-1002", scenario.TamperedText);
 
         Assert.StartsWith("NOT SENT", result, StringComparison.Ordinal);
         Assert.Empty(lab.Outbox.Sent);
         Assert.Contains(lab.Audit.Entries, e => e.Event == "send-refused");
     }
 
-    [Fact]
-    public async Task S6_duplicate_is_blocked_without_a_human_and_not_resent()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S6_duplicate_is_blocked_without_a_human_and_not_resent(string lang)
     {
-        var scenario = Get(6);
+        var scenario = Get(6, lang);
         var approver = Approves();
         var (lab, _) = ScenarioHarness.Build(scenario, approver);
 
@@ -152,10 +173,12 @@ public class ScenarioTests
         Assert.Contains(lab.Audit.Entries, e => e is { Event: "policy-decision", Outcome: "Block", Stage: "Duplicate" });
     }
 
-    [Fact]
-    public async Task S7_judge_down_goes_to_a_human()
+    [Theory]
+    [InlineData("en")]
+    [InlineData("es")]
+    public async Task S7_judge_down_goes_to_a_human(string lang)
     {
-        var scenario = Get(7);
+        var scenario = Get(7, lang);
         var approver = Rejects();
         var (lab, _) = ScenarioHarness.Build(scenario, approver);
 

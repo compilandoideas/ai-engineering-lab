@@ -22,7 +22,7 @@ public sealed record RunReport(
     int JudgeMisses,
     IReadOnlyList<ItemResult> Items);
 
-public sealed record EvaluationReport(string Model, DateTimeOffset At, IReadOnlyList<RunReport> Runs);
+public sealed record EvaluationReport(string Model, string Language, DateTimeOffset At, IReadOnlyList<RunReport> Runs);
 
 /// <summary>
 /// Runs the full policy (with the given judge) over a hand-labeled set of drafts.
@@ -38,6 +38,9 @@ public static class Evaluator
         Converters = { new JsonStringEnumConverter() },
     };
 
+    public static string DatasetPath(Language language) =>
+        Path.Combine(AppContext.BaseDirectory, "data", $"drafts.{language.ToString().ToLowerInvariant()}.jsonl");
+
     public static IReadOnlyList<LabeledDraft> Load(string path) =>
         File.ReadLines(path)
             .Where(l => !string.IsNullOrWhiteSpace(l))
@@ -45,14 +48,14 @@ public static class Evaluator
             .ToList();
 
     public static async Task<RunReport> RunOnceAsync(int run, IReadOnlyList<LabeledDraft> drafts, IReplyJudge judge,
-        TimeSpan judgeTimeout, CancellationToken cancellationToken = default)
+        TimeSpan judgeTimeout, Language language = Language.En, CancellationToken cancellationToken = default)
     {
         var results = new List<ItemResult>();
         foreach (var draft in drafts)
         {
             // Fresh state per draft so one item cannot influence another (e.g. via duplicates).
             var policy = new PublishPolicy(
-                SampleTickets.Store(),
+                SampleTickets.Store(language),
                 AgentPermissions.EmailOnly(SupportAgentFactory.AgentName),
                 new FakeOutbox(TimeProvider.System),
                 judge,

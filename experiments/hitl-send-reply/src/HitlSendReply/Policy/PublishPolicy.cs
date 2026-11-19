@@ -39,7 +39,7 @@ public sealed class PublishPolicy(
             if (string.IsNullOrWhiteSpace(request.Text))
                 return PolicyDecision.Block(PolicyStage.Facts, "Empty reply.");
 
-            var facts = FactChecker.Check(request.Text, ticket.Order);
+            var facts = FactChecker.Check(request.Text, ticket.Order, ticket.Language);
             if (!facts.Verified)
                 return PolicyDecision.Human(PolicyStage.Facts, string.Join(" ", facts.Issues));
 

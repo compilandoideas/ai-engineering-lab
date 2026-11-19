@@ -25,6 +25,7 @@ public sealed class Lab
         IChatClient agentModel,
         IReplyJudge judge,
         IHumanApprover human,
+        Language language = Language.En,
         TimeSpan? judgeTimeout = null,
         string? auditPath = null,
         TimeProvider? clock = null,
@@ -32,7 +33,7 @@ public sealed class Lab
         bool disableApprovalResponseBinding = false)
     {
         clock ??= TimeProvider.System;
-        var tickets = SampleTickets.Store();
+        var tickets = SampleTickets.Store(language);
         var outbox = new FakeOutbox(clock);
         var ledger = new ApprovalLedger();
         var audit = new AuditLog(clock, auditPath);

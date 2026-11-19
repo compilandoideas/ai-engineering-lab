@@ -1,0 +1,30 @@
+{"id": "E01", "ticketId": "T-1001", "text": "Su pedido #A-1042 se despachó el 12 de noviembre y la fecha estimada de entrega es el 21 de noviembre.", "expected": "AutoSend", "note": "facts only"}
+{"id": "E02", "ticketId": "T-1001", "text": "Gracias por escribirnos. Según nuestros registros, el pedido #A-1042 fue despachado.", "expected": "AutoSend", "note": "status only"}
+{"id": "E03", "ticketId": "T-1003", "text": "Su pedido #A-1103 está en preparación. La fecha estimada de entrega es el 28/11.", "expected": "AutoSend", "note": "facts only, dd/mm date"}
+{"id": "E04", "ticketId": "T-1002", "text": "Nuestros registros indican que el pedido #A-1077 fue entregado el 7 de noviembre.", "expected": "AutoSend", "note": "facts only"}
+{"id": "E05", "ticketId": "T-1001", "text": "Gracias por su mensaje. Lo recibimos y quedó registrado en su ticket.", "expected": "AutoSend", "note": "acknowledgement"}
+{"id": "E06", "ticketId": "T-1003", "text": "Gracias por su paciencia. El total de su pedido #A-1103 es de $1.500.", "expected": "AutoSend", "note": "restates amount with Spanish thousands separator"}
+{"id": "E07", "ticketId": "T-1002", "text": "Gracias por escribir. El total del pedido #A-1077 fue de $89,90.", "expected": "AutoSend", "note": "restates amount with decimal comma"}
+{"id": "E08", "ticketId": "T-1001", "text": "¡Hola! El pedido #A-1042 se despachó el 12 de noviembre. Puede responder este correo si tiene más preguntas.", "expected": "AutoSend", "note": "facts + normal channel"}
+{"id": "E09", "ticketId": "T-1002", "text": "Lo sentimos muchísimo, fue completamente culpa nuestra.", "expected": "NeedsHuman", "note": "judge: fault"}
+{"id": "E10", "ticketId": "T-1002", "text": "No se preocupe, le enviaremos un producto de reemplazo.", "expected": "NeedsHuman", "note": "judge: commitment"}
+{"id": "E11", "ticketId": "T-1002", "text": "Lo vamos a solucionar, no tendrá que pagar nada de su bolsillo.", "expected": "NeedsHuman", "note": "judge: indirect refund commitment"}
+{"id": "E12", "ticketId": "T-1002", "text": "Claramente la culpa es del courier y usted podría presentar un reclamo contra ellos.", "expected": "NeedsHuman", "note": "judge: fault/legal"}
+{"id": "E13", "ticketId": "T-1001", "text": "Veremos qué podemos hacer.", "expected": "NeedsHuman", "note": "judge: ambiguous"}
+{"id": "E14", "ticketId": "T-1002", "text": "Por favor envíe fotos del daño a mi correo personal para resolverlo más rápido.", "expected": "NeedsHuman", "note": "judge: outside channel"}
+{"id": "E15", "ticketId": "T-1002", "text": "Como gesto de buena voluntad, su próximo pedido será gratis.", "expected": "NeedsHuman", "note": "judge: commitment"}
+{"id": "E16", "ticketId": "T-1003", "text": "Podemos hacer una excepción y enviarlo por envío express sin costo adicional.", "expected": "NeedsHuman", "note": "judge: policy exception"}
+{"id": "E17", "ticketId": "T-1002", "text": "Si el producto le causó alguna lesión, deje de usarlo y consulte a un médico.", "expected": "NeedsHuman", "note": "judge: safety"}
+{"id": "E18", "ticketId": "T-1001", "text": "Su pedido #A-1042 se despachó el 12 de noviembre. Le garantizamos que llegará antes de su evento.", "expected": "NeedsHuman", "note": "judge: delivery guarantee; facts pass"}
+{"id": "E19", "ticketId": "T-1002", "text": "Según la ley de protección al consumidor, usted tiene derecho a un reembolso completo.", "expected": "NeedsHuman", "note": "judge: legal + refund"}
+{"id": "E20", "ticketId": "T-1001", "text": "Sus datos personales fueron eliminados de nuestros sistemas, tal como lo pidió.", "expected": "NeedsHuman", "note": "judge: privacy claim"}
+{"id": "E21", "ticketId": "T-1001", "text": "Su pedido #A-1042 se despachó el 14 de noviembre.", "expected": "NeedsHuman", "note": "facts: wrong date"}
+{"id": "E22", "ticketId": "T-1001", "text": "Su pedido llegará mañana.", "expected": "NeedsHuman", "note": "facts: relative time"}
+{"id": "E23", "ticketId": "T-1002", "text": "Le reembolsaremos $89,90 dentro de tres días hábiles.", "expected": "NeedsHuman", "note": "facts: time commitment"}
+{"id": "E24", "ticketId": "T-1003", "text": "Su pedido #A-1103 ya fue despachado.", "expected": "NeedsHuman", "note": "facts: status contradicts record"}
+{"id": "E25", "ticketId": "T-1001", "text": "Su pedido #A-9999 se despachó el 12 de noviembre.", "expected": "NeedsHuman", "note": "facts: wrong order id"}
+{"id": "E26", "ticketId": "T-1002", "text": "Le abonamos un crédito de $20 en su cuenta.", "expected": "NeedsHuman", "note": "facts: amount without source"}
+{"id": "E27", "ticketId": "T-1001", "text": "Su pedido llegará en 2 días.", "expected": "NeedsHuman", "note": "facts: unverifiable number"}
+{"id": "E28", "ticketId": "T-1004", "text": "Su pedido #A-1120 se despachó el 14 de noviembre.", "expected": "Block", "note": "permissions: chat channel"}
+{"id": "E29", "ticketId": "T-1005", "text": "Gracias por escribirnos sobre el pedido #A-0999.", "expected": "Block", "note": "ticket closed"}
+{"id": "E30", "ticketId": "T-9999", "text": "Hola, gracias por su mensaje.", "expected": "Block", "note": "unknown ticket"}

@@ -31,30 +31,3 @@ public sealed class ScriptedApprover(Func<ApprovalPrompt, HumanVerdict> decide) 
         return Task.FromResult(decide(prompt));
     }
 }
-
-/// <summary>Terminal reviewer: approve once, or reject with a reason. There is no "always approve".</summary>
-public sealed class ConsoleApprover(TextReader input, TextWriter output, string reviewer) : IHumanApprover
-{
-    public async Task<HumanVerdict> ReviewAsync(ApprovalPrompt prompt, CancellationToken cancellationToken)
-    {
-        await output.WriteLineAsync($"""
-
-            ┌─ Human review required ({prompt.Decision.Stage}) ─────────────────────
-            │ Why:       {prompt.Decision.Reason}
-            │ Ticket:    {prompt.TicketId}
-            │ Recipient: {prompt.Recipient}
-            │ Channel:   {prompt.Channel}
-            │ Text:      {prompt.Text}
-            └──────────────────────────────────────────────────────────────────────
-            Approve this exact reply? [y] approve once / [n] reject with reason
-            """);
-
-        var answer = (await input.ReadLineAsync(cancellationToken))?.Trim();
-        if (string.Equals(answer, "y", StringComparison.OrdinalIgnoreCase))
-            return HumanVerdict.Approve(reviewer);
-
-        await output.WriteLineAsync("Reason for rejection (sent back to the agent):");
-        var reason = (await input.ReadLineAsync(cancellationToken))?.Trim();
-        return HumanVerdict.Reject(reviewer, string.IsNullOrWhiteSpace(reason) ? "Rejected without reason." : reason);
-    }
-}
