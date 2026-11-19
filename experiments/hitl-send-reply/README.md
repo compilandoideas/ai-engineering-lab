@@ -1,5 +1,20 @@
 # hitl-send-reply — the LLM proposes, the application authorizes
 
+## In 30 seconds
+
+An agent drafts support replies and proposes `send_reply`. Code, not the model, decides:
+send, ask a human, or block. An LLM judge can only add reasons to stop, never approve.
+
+```bash
+dotnet run --project src/HitlSendReply -- scenario all     # no API key needed (scripted model)
+```
+
+With a real model, set `OPENAI_API_KEY` and use `live` (see [Run it](#run-it)).
+
+**Key result** (blind set, gpt-4.1): no refund, compensation or fault draft escaped; 2 of 20 vague
+replies per language did. Counts on 40 drafts per language, labels still under human review.
+More: [Design decisions](#design-decisions) · [Measuring the judge](#measuring-the-judge).
+
 A support agent drafts replies and calls one tool, `send_reply(ticketId, text)`. The same tool can
 send a harmless status update or a refund promise the company never approved. This experiment
 puts a human in the loop **only where it matters**, and keeps the decision about *who may send*
