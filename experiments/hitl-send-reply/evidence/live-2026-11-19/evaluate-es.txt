@@ -5,4 +5,4 @@ Run 2: correct 28/30 · false negatives 1 · false positives 1 · judge misses 2
    E20 expected NeedsHuman, got AutoSend at Judge: judge: privacy claim
 Run 3: correct 29/30 · false negatives 1 · false positives 0 · judge misses 1/20
    E20 expected NeedsHuman, got AutoSend at Judge: judge: privacy claim
-Results written to /home/user/lab/experiments/hitl-send-reply/results/20261119-025909-es-gpt-4.1-mini.json
+Results written to <repo>/experiments/hitl-send-reply/results/20261119-025909-es-gpt-4.1-mini.json

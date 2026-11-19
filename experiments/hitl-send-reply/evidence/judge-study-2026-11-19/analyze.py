@@ -1,7 +1,7 @@
 import json, glob, collections, os, sys
 doubt = {}
 for lang in ("es","en"):
-    for l in open(f"/home/user/lab2/experiments/hitl-send-reply/src/HitlSendReply/data/drafts.{lang}.jsonl", encoding="utf-8"):
+    for l in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "HitlSendReply", "data", f"drafts.{lang}.jsonl"), encoding="utf-8"):
         d = json.loads(l); doubt[d["id"]] = d.get("doubtful", False)
 print(f"{'cond':28} {'stable':>8} {'escN':>5} {'escJ':>7} {'fpN':>4} {'fpJ':>7}  (N=drafts with >=1 error; J=judgments)")
 for f in sorted(glob.glob(sys.argv[1] + "/*.jsonl")):

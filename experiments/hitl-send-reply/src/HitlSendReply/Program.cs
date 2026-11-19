@@ -78,12 +78,13 @@ static async Task<int> RunLiveAsync(string ticketId, string message, Language la
         return 2;
     }
 
-    using var model = settings.CreateChatClient();
+    using var agentModel = settings.CreateChatClient(settings.AgentModel);
+    using var judgeModel = settings.CreateChatClient(settings.JudgeModel);
     var auditPath = Path.Combine(Directory.GetCurrentDirectory(), "audit.jsonl");
-    var lab = Lab.Create(model, new LlmReplyJudge(model), new ConsoleApprover(Console.In, Environment.UserName), language, auditPath: auditPath);
+    var lab = Lab.Create(agentModel, new LlmReplyJudge(judgeModel), new ConsoleApprover(Console.In, Environment.UserName), language, auditPath: auditPath);
 
     ConsoleUi.Banner(ConsoleUi.T.LiveModel);
-    ConsoleUi.LiveHeader(settings.Model, ticketId, message);
+    ConsoleUi.LiveHeader($"agent {settings.AgentModel} · judge {settings.JudgeModel}", ticketId, message);
     var result = await lab.Runner.RunAsync(ticketId, message);
     ConsoleUi.Trace(lab.Audit);
     ConsoleUi.Result(lab.Outbox, 0);
@@ -99,8 +100,8 @@ static async Task<int> EvaluateAsync(int runs, Language language)
         return 2;
     }
 
-    using var model = settings.CreateChatClient();
-    var judge = new LlmReplyJudge(model);
+    using var judgeModel = settings.CreateChatClient(settings.JudgeModel);
+    var judge = new LlmReplyJudge(judgeModel);
     var drafts = Evaluator.Load(Evaluator.DatasetPath(language));
     var reports = new List<RunReport>();
 
@@ -114,10 +115,10 @@ static async Task<int> EvaluateAsync(int runs, Language language)
             Console.WriteLine($"   {miss.Id} expected {miss.Expected}, got {miss.Actual} at {miss.Stage}: {miss.Note}");
     }
 
-    var evaluation = new EvaluationReport(settings.Model, language.ToString().ToLowerInvariant(), DateTimeOffset.UtcNow, reports);
+    var evaluation = new EvaluationReport(settings.JudgeModel, language.ToString().ToLowerInvariant(), DateTimeOffset.UtcNow, reports);
     var dir = Path.Combine(Directory.GetCurrentDirectory(), "results");
     Directory.CreateDirectory(dir);
-    var file = Path.Combine(dir, $"{evaluation.At:yyyyMMdd-HHmmss}-{evaluation.Language}-{string.Join("_", settings.Model.Split(Path.GetInvalidFileNameChars()))}.json");
+    var file = Path.Combine(dir, $"{evaluation.At:yyyyMMdd-HHmmss}-{evaluation.Language}-{string.Join("_", settings.JudgeModel.Split(Path.GetInvalidFileNameChars()))}.json");
     await File.WriteAllTextAsync(file, JsonSerializer.Serialize(evaluation, Evaluator.Json));
     Console.WriteLine($"Results written to {file}");
     return 0;

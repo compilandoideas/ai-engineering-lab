@@ -44,7 +44,7 @@ customer message ──► Agent (LLM) ──► send_reply(ticketId, text)
 
 ## Design decisions
 
-Each one: the decision, the alternative we discarded, why, and what backs it.
+Each one: the decision, the alternative discarded, why, and what backs it.
 
 1. **The LLM can escalate, never authorize.**
    Discarded: a classifier that decides "safe to send". An LLM verdict is a probability, not a
@@ -86,7 +86,24 @@ Each one: the decision, the alternative we discarded, why, and what backs it.
    Evidence: `LlmReplyJudge` builds its prompt from the draft and the ticket only;
    `S4_prompt_injection_...` shows the injected text reaches the agent, not the reviewer path.
 
-7. **MAF is an adapter; the policy is plain code.**
+7. **Vague or evasive replies and any safety advice always go to a human.**
+   Discarded: treating "We're on it" or "It should ship soon" as harmless status updates. They
+   promise nothing explicit, which is exactly why the customer reads a promise into them. The judge
+   prompt names them explicitly.
+   Evidence: in the judge study every escape by gpt-4.1-mini was of this kind (evasive, vague
+   timing, safety advice) and repeated 5 of 5 runs, so it is a policy gap, not noise.
+
+8. **The judge runs on a stronger model than the agent.**
+   Discarded: one model for everything. Drafting errors are caught downstream; judging errors are
+   the last line before auto-send. Agent: gpt-4.1-mini; judge: gpt-4.1 (`LAB_AGENT_MODEL`,
+   `LAB_JUDGE_MODEL`).
+   Evidence ([judge study](evidence/judge-study-2026-11-19/README.md), 100 drafts per language,
+   90 reach the judge, 5 runs each): across all 4,500 judgments (10 conditions), no draft promising
+   money or admitting fault escaped. gpt-4.1 in Spanish: 90/90 stable, 0 escapes, 0 false
+   positives. gpt-4.1-mini in Spanish: 4 vague/evasive/safety drafts escaped, deterministically.
+   Few-shot examples and "rationale first" prompts did not improve either model.
+
+9. **MAF is an adapter; the policy is plain code.**
    Discarded: putting the rules inside framework callbacks. The policy must survive a framework
    change and a port to Python.
    Evidence: `ArchitectureTests` (fails if `Domain/` or `Policy/` reference MAF,
@@ -232,8 +249,9 @@ dotnet run --project src/HitlSendReply -- scenario all --lang es   # Spanish dat
 Any OpenAI-compatible endpoint works: OpenAI, Azure OpenAI (v1 endpoint) or Ollama.
 
 ```bash
-# OpenAI (model defaults to gpt-4.1-mini; override with LAB_LLM_MODEL)
+# OpenAI. Agent defaults to gpt-4.1-mini, judge to gpt-4.1
 export OPENAI_API_KEY=sk-...
+# export LAB_AGENT_MODEL=gpt-4.1-mini LAB_JUDGE_MODEL=gpt-4.1   # optional overrides
 
 # or Ollama on your Mac
 ollama pull llama3.1:8b
@@ -280,6 +298,9 @@ stage go to the judge, 5 runs each, temperature 0
 | gpt-4.1-mini · EN | 89/90 | 1 | 10/300 | 7/150 |
 | gpt-4.1 · ES | 90/90 | 0 | 5/300 (one doubtful draft) | 0/150 |
 | gpt-4.1 · EN | 89/90 | 2 | 10/300 | 3/150 |
+
+These numbers were measured with the judge prompt *before* it named vague timing and safety
+advice explicitly (decision 7). The wording changed after the study; it has not been re-measured yet.
 
 What it says, and what it does not:
 

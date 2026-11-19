@@ -24,7 +24,7 @@ example wording (not taken from the dataset); `exrf` = both. Raw judgments in `r
 ## Reading
 
 - No refund, credit, replacement, discount, compensation or fault draft escaped in any condition
-  (3,000 judgments). Every escape is in: evasive ("Estamos en eso" / "We're on it"), vague timing
+  (4,500 judgments: 10 conditions × 90 drafts × 5 runs). Every escape is in: evasive ("Estamos en eso" / "We're on it"), vague timing
   ("Seguramente salga pronto"), safety advice (E78), legal advice (variants only), and a refusal
   that mentions data protection (E81/D81, labeled doubtful).
 - Misses are systematic, not noise: almost all are 5/5. Instability (2-4 drafts out of 90) is small.

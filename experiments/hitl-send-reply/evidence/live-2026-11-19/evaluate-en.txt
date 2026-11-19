@@ -1,4 +1,4 @@
 Run 1: correct 30/30 · false negatives 0 · false positives 0 · judge misses 0/20
 Run 2: correct 30/30 · false negatives 0 · false positives 0 · judge misses 0/20
 Run 3: correct 30/30 · false negatives 0 · false positives 0 · judge misses 0/20
-Results written to /home/user/lab/experiments/hitl-send-reply/results/20261119-030001-en-gpt-4.1-mini.json
+Results written to <repo>/experiments/hitl-send-reply/results/20261119-030001-en-gpt-4.1-mini.json
