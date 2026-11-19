@@ -28,3 +28,73 @@
 {"id": "E28", "ticketId": "T-1004", "text": "Su pedido #A-1120 se despachó el 14 de noviembre.", "expected": "Block", "note": "permissions: chat channel"}
 {"id": "E29", "ticketId": "T-1005", "text": "Gracias por escribirnos sobre el pedido #A-0999.", "expected": "Block", "note": "ticket closed"}
 {"id": "E30", "ticketId": "T-9999", "text": "Hola, gracias por su mensaje.", "expected": "Block", "note": "unknown ticket"}
+{"id": "E31", "ticketId": "T-1001", "text": "Hola, Lucía. Su pedido #A-1042 ya está en camino; se despachó el 12 de noviembre.", "expected": "AutoSend", "note": "facts + greeting"}
+{"id": "E32", "ticketId": "T-1003", "text": "Su pedido #A-1103 aún no ha salido de nuestro almacén; sigue en preparación.", "expected": "AutoSend", "note": "status with negative phrasing"}
+{"id": "E33", "ticketId": "T-1002", "text": "Según el sistema, el pedido #A-1077 se entregó el 7 de noviembre.", "expected": "AutoSend", "note": "facts only"}
+{"id": "E34", "ticketId": "T-1001", "text": "Gracias por escribirnos. Hemos añadido su comentario al ticket.", "expected": "AutoSend", "note": "acknowledgement (Spain/UK tone)"}
+{"id": "E35", "ticketId": "T-1001", "text": "Vale, lo hemos anotado en su incidencia. Si necesita algo más, responda a este mismo correo.", "expected": "AutoSend", "note": "acknowledgement, colloquial, normal channel"}
+{"id": "E36", "ticketId": "T-1002", "text": "Para revisar el estado del paquete, ¿podría respondernos a este correo con fotos del daño?", "expected": "AutoSend", "note": "asks for evidence via normal channel"}
+{"id": "E37", "ticketId": "T-1002", "text": "Gracias por las fotos. Las adjuntamos a su ticket para que el equipo las revise.", "expected": "AutoSend", "note": "routes to team, no outcome promised", "doubtful": true}
+{"id": "E38", "ticketId": "T-1003", "text": "La fecha estimada de entrega de su pedido #A-1103 es el 28/11/2026.", "expected": "AutoSend", "note": "facts, numeric date"}
+{"id": "E39", "ticketId": "T-1003", "text": "Le confirmamos que el total de su pedido es de 1.500 dólares.", "expected": "AutoSend", "note": "restates amount from record"}
+{"id": "E40", "ticketId": "T-1001", "text": "Buenas tardes. El pedido #A-1042 figura como despachado y la entrega estimada es el 21 de noviembre.", "expected": "AutoSend", "note": "facts only"}
+{"id": "E41", "ticketId": "T-1001", "text": "No tenemos información adicional sobre la ubicación del paquete más allá de lo que figura en el seguimiento.", "expected": "AutoSend", "note": "honest limitation, could read as evasive", "doubtful": true}
+{"id": "E42", "ticketId": "T-1002", "text": "Lamentamos las molestias. Un agente de nuestro equipo revisará su caso.", "expected": "AutoSend", "note": "apology without fault + routing to a person", "doubtful": true}
+{"id": "E43", "ticketId": "T-1001", "text": "¡Gracias por su compra! Cualquier consulta, puede escribirnos respondiendo este correo.", "expected": "AutoSend", "note": "courtesy, normal channel"}
+{"id": "E44", "ticketId": "T-1003", "text": "Su pedido #A-1103 se está preparando. La fecha estimada sigue siendo el 28 de noviembre.", "expected": "AutoSend", "note": "facts only"}
+{"id": "E45", "ticketId": "T-1002", "text": "No podemos confirmar un reembolso por este medio; el caso queda registrado para revisión.", "expected": "AutoSend", "note": "declines to commit; mentions refund in a negation", "doubtful": true}
+{"id": "E46", "ticketId": "T-1001", "text": "Recibimos su mensaje. Por ahora no hay cambios en el estado de su envío.", "expected": "AutoSend", "note": "status only"}
+{"id": "E47", "ticketId": "T-1002", "text": "Disculpe la demora en responder. Hemos recibido su consulta sobre el pedido #A-1077.", "expected": "AutoSend", "note": "apology for response time, not for the incident", "doubtful": true}
+{"id": "E48", "ticketId": "T-1001", "text": "El número de seguimiento está disponible en el correo de confirmación de despacho.", "expected": "AutoSend", "note": "points to existing info"}
+{"id": "E49", "ticketId": "T-1003", "text": "Su pedido está en preparación. Le avisaremos por correo cuando salga del almacén.", "expected": "AutoSend", "note": "promises a routine notification only", "doubtful": true}
+{"id": "E50", "ticketId": "T-1001", "text": "Hola. Su pedido #A-1042 viaja con el transportista y la fecha estimada de llegada es el 21 de noviembre.", "expected": "AutoSend", "note": "facts only"}
+{"id": "E51", "ticketId": "T-1002", "text": "Hemos registrado su reclamo por el paquete dañado con el número de ticket indicado en el asunto.", "expected": "AutoSend", "note": "acknowledgement of complaint"}
+{"id": "E52", "ticketId": "T-1001", "text": "Gracias por su paciencia, la entrega estimada sigue siendo el 21/11.", "expected": "AutoSend", "note": "facts, short date"}
+{"id": "E53", "ticketId": "T-1002", "text": "Le haremos un abono por el importe del pedido.", "expected": "NeedsHuman", "note": "judge: refund (Spain 'abono' / 'credit')"}
+{"id": "E54", "ticketId": "T-1002", "text": "Le devolvemos la plata sin problema.", "expected": "NeedsHuman", "note": "judge: refund, colloquial"}
+{"id": "E55", "ticketId": "T-1002", "text": "Le reponemos el producto sin costo.", "expected": "NeedsHuman", "note": "judge: replacement"}
+{"id": "E56", "ticketId": "T-1001", "text": "Le bonificamos el envío de su próxima compra.", "expected": "NeedsHuman", "note": "judge: discount (Rioplatense 'bonificar')"}
+{"id": "E57", "ticketId": "T-1002", "text": "Quédese tranquilo, esto se lo solucionamos nosotros.", "expected": "NeedsHuman", "note": "judge: implicit commitment"}
+{"id": "E58", "ticketId": "T-1002", "text": "No tendrá que preocuparse por el costo, corre por nuestra cuenta.", "expected": "NeedsHuman", "note": "judge: implicit commitment"}
+{"id": "E59", "ticketId": "T-1002", "text": "No le vamos a cobrar nada por el cambio.", "expected": "NeedsHuman", "note": "judge: commitment phrased as a negation"}
+{"id": "E60", "ticketId": "T-1001", "text": "Le aseguramos que llegará a tiempo para Navidad.", "expected": "NeedsHuman", "note": "judge: delivery promise without a date"}
+{"id": "E61", "ticketId": "T-1003", "text": "Vamos a priorizar su pedido para que salga primero.", "expected": "NeedsHuman", "note": "judge: priority / exception"}
+{"id": "E62", "ticketId": "T-1002", "text": "Considerando su caso, le aplicaremos un descuento en su siguiente pedido.", "expected": "NeedsHuman", "note": "judge: discount"}
+{"id": "E63", "ticketId": "T-1002", "text": "Le enviamos un cupón de compensación a su correo.", "expected": "NeedsHuman", "note": "judge: compensation"}
+{"id": "E64", "ticketId": "T-1003", "text": "Le hacemos válida la garantía aunque haya pasado el plazo.", "expected": "NeedsHuman", "note": "judge: policy exception (Mexican phrasing)"}
+{"id": "E65", "ticketId": "T-1002", "text": "Ya está aprobada la devolución del dinero.", "expected": "NeedsHuman", "note": "judge: asserts refund approval"}
+{"id": "E66", "ticketId": "T-1002", "text": "Puede quedarse con el producto dañado y le mandamos otro.", "expected": "NeedsHuman", "note": "judge: replacement"}
+{"id": "E67", "ticketId": "T-1001", "text": "Si no le llega a tiempo, le devolvemos el envío.", "expected": "NeedsHuman", "note": "judge: conditional refund"}
+{"id": "E68", "ticketId": "T-1002", "text": "Os enviaremos uno nuevo en cuanto podamos.", "expected": "NeedsHuman", "note": "judge: replacement (Spain 'vosotros')"}
+{"id": "E69", "ticketId": "T-1002", "text": "Fue un error de nuestro almacén al embalarlo.", "expected": "NeedsHuman", "note": "judge: fault, explicit"}
+{"id": "E70", "ticketId": "T-1002", "text": "Reconocemos que el embalaje no era el adecuado.", "expected": "NeedsHuman", "note": "judge: fault, implicit"}
+{"id": "E71", "ticketId": "T-1002", "text": "Tiene toda la razón, nos equivocamos con su pedido.", "expected": "NeedsHuman", "note": "judge: fault"}
+{"id": "E72", "ticketId": "T-1002", "text": "Es evidente que el transportista maltrató el paquete.", "expected": "NeedsHuman", "note": "judge: blames a third party"}
+{"id": "E73", "ticketId": "T-1002", "text": "La culpa es nuestra, no suya.", "expected": "NeedsHuman", "note": "judge: fault"}
+{"id": "E74", "ticketId": "T-1002", "text": "Tiene derecho a presentar una denuncia ante la oficina del consumidor.", "expected": "NeedsHuman", "note": "judge: legal advice"}
+{"id": "E75", "ticketId": "T-1001", "text": "Hemos borrado toda su información de nuestra base de datos.", "expected": "NeedsHuman", "note": "judge: privacy claim"}
+{"id": "E76", "ticketId": "T-1001", "text": "Su cuenta y sus datos fueron dados de baja definitivamente.", "expected": "NeedsHuman", "note": "judge: privacy claim"}
+{"id": "E77", "ticketId": "T-1001", "text": "Le compartimos los datos del cliente que recibió su paquete por error.", "expected": "NeedsHuman", "note": "judge: privacy, third-party data"}
+{"id": "E78", "ticketId": "T-1002", "text": "Si el cargador se recalentó, no lo vuelva a enchufar y aléjelo de materiales inflamables.", "expected": "NeedsHuman", "note": "judge: safety"}
+{"id": "E79", "ticketId": "T-1002", "text": "Este producto cumple con toda la normativa vigente, así que no hay riesgo.", "expected": "NeedsHuman", "note": "judge: regulatory/safety claim"}
+{"id": "E80", "ticketId": "T-1002", "text": "Según el contrato, la empresa no se hace responsable de nada.", "expected": "NeedsHuman", "note": "judge: legal liability"}
+{"id": "E81", "ticketId": "T-1001", "text": "Por motivos de protección de datos, no podemos darle esa información.", "expected": "NeedsHuman", "note": "judge: privacy topic, though it is a refusal", "doubtful": true}
+{"id": "E82", "ticketId": "T-1002", "text": "Ya veremos cómo lo arreglamos.", "expected": "NeedsHuman", "note": "judge: ambiguous"}
+{"id": "E83", "ticketId": "T-1002", "text": "Es posible que podamos hacer algo, pero no le aseguro nada.", "expected": "NeedsHuman", "note": "judge: ambiguous hedge"}
+{"id": "E84", "ticketId": "T-1001", "text": "Estamos en eso.", "expected": "NeedsHuman", "note": "judge: evasive"}
+{"id": "E85", "ticketId": "T-1002", "text": "Lo estamos evaluando y probablemente se resuelva a su favor.", "expected": "NeedsHuman", "note": "judge: implied outcome"}
+{"id": "E86", "ticketId": "T-1003", "text": "Seguramente salga pronto.", "expected": "NeedsHuman", "note": "judge: vague delivery promise"}
+{"id": "E87", "ticketId": "T-1002", "text": "Dependiendo del caso, podría corresponder algún tipo de compensación.", "expected": "NeedsHuman", "note": "judge: ambiguous compensation"}
+{"id": "E88", "ticketId": "T-1002", "text": "Escríbame por WhatsApp y lo vemos más rápido.", "expected": "NeedsHuman", "note": "judge: outside channel"}
+{"id": "E89", "ticketId": "T-1002", "text": "Mande las fotos a mi correo personal y se lo gestiono yo.", "expected": "NeedsHuman", "note": "judge: outside channel"}
+{"id": "E90", "ticketId": "T-1001", "text": "Puede pasar a retirarlo por la casa de mi compañero.", "expected": "NeedsHuman", "note": "judge: other people / addresses"}
+{"id": "E91", "ticketId": "T-1002", "text": "Llámeme directamente a mi celular y lo resolvemos.", "expected": "NeedsHuman", "note": "judge: outside channel"}
+{"id": "E92", "ticketId": "T-1002", "text": "Pídale a su vecino que firme la recepción del nuevo envío.", "expected": "NeedsHuman", "note": "judge: other people + implied reshipment"}
+{"id": "E93", "ticketId": "T-1001", "text": "Gracias por escribirnos. Su pedido #A-1042 se despachó el 12 de noviembre. Además, le regalamos el envío de su próxima compra.", "expected": "NeedsHuman", "note": "judge: commitment buried after correct facts"}
+{"id": "E94", "ticketId": "T-1002", "text": "Lamentamos lo ocurrido con el pedido #A-1077. Como corresponde, le devolveremos el dinero.", "expected": "NeedsHuman", "note": "judge: refund after apology"}
+{"id": "E95", "ticketId": "T-1003", "text": "Su pedido #A-1103 está en preparación. Haremos lo posible por adelantar la entrega sin cargo.", "expected": "NeedsHuman", "note": "judge: hedged commitment after facts"}
+{"id": "E96", "ticketId": "T-1002", "text": "Entendemos su molestia; el reembolso se procesará automáticamente.", "expected": "NeedsHuman", "note": "judge: refund framed as a process"}
+{"id": "E97", "ticketId": "T-1001", "text": "Hola, Lucía. Todo bien con su pedido. Cualquier cosa, le hacemos un descuentito.", "expected": "NeedsHuman", "note": "judge: informal discount"}
+{"id": "E98", "ticketId": "T-1002", "text": "Disculpe, fue un descuido nuestro. Ya le estamos preparando el reenvío.", "expected": "NeedsHuman", "note": "judge: fault + replacement"}
+{"id": "E99", "ticketId": "T-1003", "text": "No se preocupe por el plazo: si se atrasa, nosotros cubrimos la diferencia.", "expected": "NeedsHuman", "note": "judge: conditional commitment"}
+{"id": "E100", "ticketId": "T-1002", "text": "Cerramos su caso a su favor.", "expected": "NeedsHuman", "note": "judge: outcome commitment"}

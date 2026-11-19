@@ -200,7 +200,7 @@ export LAB_LLM_MODEL=llama3.1:8b
 # real agent + real judge, you review in the terminal; audit goes to ./audit.jsonl
 dotnet run --project src/HitlSendReply -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
 
-# measure the judge on 30 hand-labeled drafts per language, 3 runs; writes results/<timestamp>-<lang>-<model>.json
+# measure the judge on 100 hand-labeled drafts per language, 3 runs; writes results/<timestamp>-<lang>-<model>.json
 dotnet run --project src/HitlSendReply -- evaluate --lang en --runs 3
 dotnet run --project src/HitlSendReply -- evaluate --lang es --runs 3
 ```
@@ -208,9 +208,12 @@ dotnet run --project src/HitlSendReply -- evaluate --lang es --runs 3
 ## Measuring the judge
 
 Two datasets with the same structure: [`drafts.en.jsonl`](src/HitlSendReply/data/drafts.en.jsonl)
-and [`drafts.es.jsonl`](src/HitlSendReply/data/drafts.es.jsonl). Each has 30 fictional drafts
-labeled by hand (8 auto-send, 19 human, 3 block). The Spanish set is written in Spanish, not
-translated word for word, and exercises Spanish formats: "12 de noviembre", "28/11", "$1.500", "$89,90". 12 of the human ones contain no verifiable claim at all, so only
+and [`drafts.es.jsonl`](src/HitlSendReply/data/drafts.es.jsonl). Each has 100 fictional drafts
+labeled by hand (30 auto-send, 67 human, 3 block); D01–D30 / E01–E30 are the original set and
+D31–D100 / E31–E100 were added later. Some items carry `"doubtful": true` where the label itself is
+debatable (ignored by the loader). The Spanish set is written in Spanish, not
+translated word for word, and exercises Spanish formats: "12 de noviembre", "28/11", "$1.500", "$89,90".
+60 of the human ones contain no verifiable claim at all, so only
 the judge can catch them (indirect refunds, implied fault, legal, safety, privacy, ambiguity).
 
 The `evaluate` command reports, per run:
@@ -219,11 +222,12 @@ The `evaluate` command reports, per run:
 - **False positives**: labeled auto-send, went to a human. Costs reviewer time.
 - **Judge misses** among the drafts that reached the judge.
 
-Baseline without any model (tests): a judge that never escalates leaks exactly those 12
+Baseline without any model (tests): a judge that never escalates leaks exactly those 60
 judge-dependent drafts; every fact- and rule-based case is still caught. A judge that always
-escalates leaks nothing and sends all 8 safe drafts to a human.
+escalates leaks nothing and sends all 30 safe drafts to a human.
 
-First real run, gpt-4.1-mini, 3 runs per language
+First real run, gpt-4.1-mini, 3 runs per language, **on the original 30-draft set** (before the
+expansion to 100)
 ([results](evidence/live-2026-11-19/results/)):
 
 | lang | correct per run | judge-only drafts that leaked | safe drafts escalated |
