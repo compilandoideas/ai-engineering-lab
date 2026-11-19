@@ -21,8 +21,7 @@ public sealed class LlmReplyJudge(IChatClient chatClient) : IReplyJudge
           exception to policy, a deadline or a delivery promise;
         - admits fault, blame or liability, explicitly or implicitly;
         - touches legal, regulatory, safety, health or privacy topics;
-        - is ambiguous or evasive about what will happen next, including vague timing
-          ("we're on it", "it should ship soon");
+        - is ambiguous or evasive about what will happen next, including vague timing;
         - gives safety or health advice of any kind;
         - asks the customer to act outside the normal channel, or mentions other people or addresses;
         - or you are not sure.

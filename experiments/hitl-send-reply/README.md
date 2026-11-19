@@ -301,12 +301,15 @@ stage go to the judge, 5 runs each, temperature 0
 | gpt-4.1 · EN | 89/90 | 2 | 10/300 | 3/150 |
 
 These numbers were measured with the judge prompt *before* it named vague timing and safety
-advice explicitly (decision 7). Re-measured after the change
-([rubric vs rules study](evidence/judge-rubric-vs-rules-2026-11-19/README.md)): gpt-4.1 escapes
-0 in EN and 1 doubtful draft in ES. Two caveats. The new wording quotes phrases that also appear
-in the dataset, so the judge is partly tuned on its own test set and these numbers are optimistic.
-And with gpt-4.1-mini in ES, draft E20 (claiming personal data was deleted) now escapes 5 of 5
-runs, where it escaped 1 to 2 of 5 before: a prompt change that fixes one class can open another.
+advice explicitly (decision 7). The first version of that wording quoted phrases from the dataset
+("we're on it", "it should ship soon"). It looked better, but it was tuned on its own test set, and
+with gpt-4.1-mini in ES it made draft E20 (claiming personal data was deleted) escape 5 of 5 runs
+instead of 1 to 2 ([measurement](evidence/judge-rubric-vs-rules-2026-11-19/README.md)). The
+phrases were removed. With the clean prompt
+([measurement](evidence/judge-clean-prompt-2026-11-19/README.md)): gpt-4.1 escapes 1 doubtful
+draft in ES and 1 in EN (D84, 3 of 5 runs); gpt-4.1-mini escapes 3 in ES and 2 in EN; E20 escapes
+0 of 5 everywhere. This is still the development set: the categories were chosen after seeing the
+failures, so a blind set is needed before these numbers generalize.
 
 What it says, and what it does not:
 
@@ -386,16 +389,17 @@ What this costs: every layer adds false positives (more human reviews). Whether 
 its place is a measurement, not a guess: run `evaluate` with and without it on the same labeled
 datasets and compare escapes and false positives.
 
-Measured on the same 90 drafts per language, 5 runs each
-([evidence](evidence/judge-rubric-vs-rules-2026-11-19/README.md)):
+Measured on the same 90 drafts per language, 5 runs each (simple judge with the clean prompt:
+[evidence](evidence/judge-clean-prompt-2026-11-19/README.md); rubric and rules:
+[evidence](evidence/judge-rubric-vs-rules-2026-11-19/README.md)):
 
 | Condition | Escaped drafts | False positives |
 |---|---|---|
-| Simple judge, gpt-4.1-mini | ES 2, EN 2 | ES 1/150, EN 7/150 |
-| Simple judge, gpt-4.1 (default) | ES 1 doubtful, EN 0 | ES 0/150, EN 2/150 |
+| Simple judge, gpt-4.1-mini | ES 3, EN 2 | ES 4/150, EN 4/150 |
+| Simple judge, gpt-4.1 (default) | ES 1 doubtful, EN 1 | ES 0/150, EN 3/150 |
 | Rubric judge, gpt-4.1 | 0 | 65/150 |
 | Rules only | ES 9, EN 3 | 1 of 30 safe drafts |
-| Rules + simple judge, gpt-4.1-mini | 0 | ES 5/150, EN 7/150 |
+| Rules + simple judge (either model) | 0 | 5/150 |
 
 Reading: the rubric buys no safety here and costs a lot of reviews, so it stays opt-in. Rules plus
 the simple judge closed every escape, but the rules were written by the dataset's author, so that
