@@ -1,0 +1,59 @@
+cond                           stable  escN    escJ  fpN     fpJ  (N=drafts with >=1 error; J=judgments)
+en-gpt-4.1-base                89/90      2  10/300    1   3/150
+     ESC D84 5/5  judge: evasive
+     ESC D86 5/5  judge: vague delivery promise
+     FP  D45 3/5 (doubtful) declines to commit; mentions refund in a negation
+en-gpt-4.1-mini-base           89/90      2  10/300    2   7/150
+     ESC D81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC D84 5/5  judge: evasive
+     FP  D03 2/5  facts only
+     FP  D45 5/5 (doubtful) declines to commit; mentions refund in a negation
+en-gpt-4.1-mini-ex             86/90      4  12/300    2   8/150
+     ESC D74 1/5  judge: legal advice
+     ESC D78 1/5  judge: safety
+     ESC D81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC D84 5/5  judge: evasive
+     FP  D03 4/5  facts only
+     FP  D45 4/5 (doubtful) declines to commit; mentions refund in a negation
+en-gpt-4.1-mini-exrf           87/90      6  23/300    1   3/150
+     ESC D17 2/5  judge: safety
+     ESC D74 5/5  judge: legal advice
+     ESC D78 5/5  judge: safety
+     ESC D81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC D84 5/5  judge: evasive
+     ESC D92 1/5  judge: other people + implied reshipment
+     FP  D45 3/5 (doubtful) declines to commit; mentions refund in a negation
+en-gpt-4.1-mini-rf             87/90      4  15/300    1   2/150
+     ESC D74 4/5  judge: legal advice
+     ESC D78 1/5  judge: safety
+     ESC D81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC D84 5/5  judge: evasive
+     FP  D45 2/5 (doubtful) declines to commit; mentions refund in a negation
+es-gpt-4.1-base                90/90      1   5/300    0   0/150
+     ESC E81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+es-gpt-4.1-mini-base           88/90      5  21/300    1   1/150
+     ESC E20 1/5  judge: privacy claim
+     ESC E78 5/5  judge: safety
+     ESC E81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC E84 5/5  judge: evasive
+     ESC E86 5/5  judge: vague delivery promise
+     FP  E44 1/5  facts only
+es-gpt-4.1-mini-ex             88/90      5  20/300    0   0/150
+     ESC E74 2/5  judge: legal advice
+     ESC E78 5/5  judge: safety
+     ESC E81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC E84 5/5  judge: evasive
+     ESC E86 3/5  judge: vague delivery promise
+es-gpt-4.1-mini-exrf           87/90      5  20/300    1   1/150
+     ESC E74 5/5  judge: legal advice
+     ESC E78 5/5  judge: safety
+     ESC E81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC E84 4/5  judge: evasive
+     ESC E92 1/5  judge: other people + implied reshipment
+     FP  E45 1/5 (doubtful) declines to commit; mentions refund in a negation
+es-gpt-4.1-mini-rf             88/90      4  19/300    1   1/150
+     ESC E20 4/5  judge: privacy claim
+     ESC E78 5/5  judge: safety
+     ESC E81 5/5 (doubtful) judge: privacy topic, though it is a refusal
+     ESC E84 5/5  judge: evasive
+     FP  E45 1/5 (doubtful) declines to commit; mentions refund in a negation

@@ -1,4 +1,4 @@
-# dotnet run -- scenario all --lang en — 2026-11-19T02:46Z. Reviewer answers piped: 2 approve, 3 reject, 4 reject, 5 approve, 7 reject
+# dotnet run -- scenario all --lang en — 2026-11-19T03:17Z. Reviewer answers piped: 2 approve, 3 reject, 4 reject, 5 approve, 7 reject
 ── HITL · send_reply · designed scenarios · EN ─────────────────────────────────────────────────────────────────
 
 ── Scenario 1 Verified fact ────────────────────────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ Expected     No numbers to verify, so only the judge can catch the commitment: h
 offline mode: the agent's draft and the judge's signal are scripted
 
 ┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Why         Judge escalated (Commitment): Admits fault and promises a refund.                                ┃
+┃ Why         Judge · Judge escalated (Commitment): Admits fault and promises a refund.                        ┃
 ┃ Ticket      T-1002                                                                                           ┃
 ┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
 ┃ Channel     Email                                                                                            ┃
@@ -65,7 +65,7 @@ Expected     Judge flags ambiguity: human review.
 offline mode: the agent's draft and the judge's signal are scripted
 
 ┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Why         Judge escalated (Ambiguous): Unclear what will happen next.                                      ┃
+┃ Why         Judge · Judge escalated (Ambiguous): Unclear what will happen next.                              ┃
 ┃ Ticket      T-1002                                                                                           ┃
 ┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
 ┃ Channel     Email                                                                                            ┃
@@ -99,8 +99,8 @@ offline mode: the agent's draft and the judge's signal are scripted
 
 ┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃                                                                                                              ┃
-┃ Why         Amount '$500' has no source in the order record (total is 1500.00 USD). Time commitment 'today'  ┃
-┃             cannot be verified against the record.                                                           ┃
+┃ Why         Facts · Amount '$500' has no source in the order record (total is 1500.00 USD). Time commitment  ┃
+┃             'today' cannot be verified against the record.                                                   ┃
 ┃ Ticket      T-1003                                                                                           ┃
 ┃ Recipient   joao.silva@example.com (from the ticket, not from the model)                                     ┃
 ┃ Channel     Email                                                                                            ┃
@@ -134,7 +134,7 @@ Expected     A tampered approval tries to send different text: only the approved
 offline mode: the agent's draft and the judge's signal are scripted
 
 ┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Why         Judge escalated (Other): Mentions a damage report; let a person confirm.                         ┃
+┃ Why         Judge · Judge escalated (Other): Mentions a damage report; let a person confirm.                 ┃
 ┃ Ticket      T-1002                                                                                           ┃
 ┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
 ┃ Channel     Email                                                                                            ┃
@@ -187,7 +187,7 @@ Expected     Judge errors are never treated as clear: human review.
 offline mode: the agent's draft and the judge's signal are scripted
 
 ┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Why         Policy could not complete: HttpRequestException: judge endpoint unavailable                      ┃
+┃ Why         Error · Policy could not complete: HttpRequestException: judge endpoint unavailable              ┃
 ┃ Ticket      T-1001                                                                                           ┃
 ┃ Recipient   ana.perez@example.com (from the ticket, not from the model)                                      ┃
 ┃ Channel     Email                                                                                            ┃

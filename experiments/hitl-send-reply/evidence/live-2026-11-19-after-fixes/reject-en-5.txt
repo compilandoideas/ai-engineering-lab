@@ -1,0 +1,21 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                        
+Ticket    T-1002                                              
+Customer  “The package arrived damaged. I want my money back.”
+
+                                              pipeline · audit log                                              
+╭─────────────────┬─────────────┬───────┬────────┬─────────────────────────────────────────────────┬───────────╮
+│ step            │ decision    │ stage │ by     │ reason                                          │ text hash │
+├─────────────────┼─────────────┼───────┼────────┼─────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  AUTO-SEND  │ Judge │ policy │ Permissions, duplicate and facts verified;      │ c67f37cd  │
+│                 │             │       │        │ judge raised nothing.                           │           │
+│ sent            │  SENT       │       │ policy │                                                 │ c67f37cd  │
+╰─────────────────┴─────────────┴───────┴────────┴─────────────────────────────────────────────────┴───────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to li.wang@example.com via Email                                                                        │
+│ “We see that your order #A-1077 was delivered after being shipped on November 3. A teammate will review your │
+│ request regarding the damaged package. Thank you for your patience.”                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: We see that your order #A-1077 was delivered after being shipped on November 3. A teammate will review 
+your request regarding the damaged package. Thank you for your patience.

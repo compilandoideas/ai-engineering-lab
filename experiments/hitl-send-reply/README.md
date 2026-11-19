@@ -9,10 +9,11 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
 tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (94/94 tests, see
-> [evidence](evidence/)). One run with a real model (gpt-4.1-mini, agent + judge) is in
-> [`evidence/live-2026-11-19/`](evidence/live-2026-11-19/); two problems it exposed are fixed
-> (see "What the real model showed"), and that run has not been repeated after the fixes yet.
+> Status: experiment. The approval pipeline is compiled and tested (98/98 tests, see
+> [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
+> [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
+> ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
+> drafts per language.
 > This is not production code.
 
 ## Design
@@ -41,17 +42,55 @@ customer message ──► Agent (LLM) ──► send_reply(ticketId, text)
                refuses any text not authorized byte-for-byte, writes the audit log
 ```
 
-Key decisions:
+## Design decisions
 
-| Decision | Why |
-|---|---|
-| The judge can only escalate | An LLM classification is a signal, not a guarantee. Auto-send needs every verifiable check to pass *and* a clear judge. |
-| Facts are extracted from the text, not declared by the model | A `citedFacts` argument would also be written by the LLM; it could cite correctly and say something else. Anything that cannot be extracted (a stray number, "tomorrow", "within two days") escalates. |
-| The judge sees the draft and the order record, never the customer's message | Instructions injected by the customer do not reach the reviewer. |
-| Recipient and channel come from the ticket | The tool has no recipient parameter, so a prompt injection cannot redirect a reply. |
-| Block is decided by the application, without a human | Permissions and duplicates are rules, not judgment. Asking a person would only add noise. |
-| No "always approve" | `CreateAlwaysApproveToolResponse` is never used for `send_reply`. Each approval covers one exact text. |
-| Approval ledger in the tool | Defense in depth: even a call that bypassed the framework cannot publish text nobody authorized. |
+Each one: the decision, the alternative we discarded, why, and what backs it.
+
+1. **The LLM can escalate, never authorize.**
+   Discarded: a classifier that decides "safe to send". An LLM verdict is a probability, not a
+   guarantee, and it varies between runs on the same input.
+   Evidence: `No_judge_output_produces_auto_send_when_a_verifiable_check_fails`,
+   `S4_prompt_injection_is_never_auto_sent_even_if_the_judge_is_fooled`; the real run shows
+   the same draft getting different verdicts across runs ([live run](evidence/live-2026-11-19/README.md)).
+
+2. **Pause on content, not on the tool.**
+   Discarded: "every `send_reply` needs a human" (reviewers rubber-stamp) and "no tool needs a
+   human" (refund promises go out). The same tool sends a status update or a liability admission;
+   the risk is in the text, the ticket and the permissions.
+   Evidence: `S1_verified_fact_is_sent_without_a_human` vs `S2_refund_promise_waits_for_a_human...`.
+
+3. **An approval is bound to the exact text, recipient and channel.**
+   Discarded: approving "the call" and letting the arguments change, or "always approve this tool".
+   Recipient and channel are not tool arguments: they come from the ticket.
+   Evidence: `S5_a_tampered_approval_cannot_change_the_text_that_is_sent`,
+   `S5_the_send_tool_refuses_text_nobody_authorized`, `S4_...` (attacker's address never becomes the recipient).
+
+4. **After a rejection, every later draft on that ticket goes to a human.**
+   Discarded: re-evaluating the rewrite like any new draft. Found with a real model: the agent
+   rewrote toward the reviewer's reason and the rewrite auto-sent in 2 of 10 runs, so no human saw
+   the final text. A rejection is evidence the ticket is risky.
+   Evidence: [live run](evidence/live-2026-11-19/README.md);
+   `After_a_rejection_the_rewrite_goes_to_a_human_even_if_it_would_auto_send`,
+   `Resending_the_exact_rejected_text_is_blocked_without_asking_again`.
+
+5. **v1 reads claims with rules; v2 lets the LLM read and the code decide.**
+   Discarded for v1: asking the model to declare the facts it cites (it writes the claim and the
+   declaration, so both can be wrong together). Rules are narrow but auditable, and anything they
+   cannot read escalates. Next step: the LLM extracts claims as typed JSON and the code compares
+   them with the ticket (see "Known limits / Next step").
+   Evidence: `FactCheckerTests`, `FactCheckerSpanishTests`, `MeasurementFixesTests`.
+
+6. **The judge never sees the customer's message.**
+   Discarded: giving the judge the whole conversation "for context". The customer's message is
+   where an injection lives; the judge only needs the draft and the order record.
+   Evidence: `LlmReplyJudge` builds its prompt from the draft and the ticket only;
+   `S4_prompt_injection_...` shows the injected text reaches the agent, not the reviewer path.
+
+7. **MAF is an adapter; the policy is plain code.**
+   Discarded: putting the rules inside framework callbacks. The policy must survive a framework
+   change and a port to Python.
+   Evidence: `ArchitectureTests` (fails if `Domain/` or `Policy/` reference MAF,
+   `Microsoft.Extensions.AI`, OpenAI or the UI; verified by introducing a violation).
 
 ## How it maps to Microsoft Agent Framework
 
@@ -140,6 +179,11 @@ Source: [`evidence/live-2026-11-19/README.md`](evidence/live-2026-11-19/README.m
 
 No refund promise reached a customer in any of the 13 live runs.
 
+After the fixes ([10 live runs](evidence/live-2026-11-19-after-fixes/), gpt-4.1-mini, reviewer rejects
+everything): in the 4 runs where the model's first draft escalated and was rejected, every later
+draft went to a human as `PriorRejection` and none auto-sent; in the other 6 the first draft
+auto-sent with no commitment in it.
+
 ## The seven designed cases
 
 Run through the real agent pipeline with a scripted model (`ScriptedChatClient`) and a scripted
@@ -160,7 +204,7 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (94 passed),
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (98 passed),
 [`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
 (console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
 (rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
@@ -226,17 +270,30 @@ Baseline without any model (tests): a judge that never escalates leaks exactly t
 judge-dependent drafts; every fact- and rule-based case is still caught. A judge that always
 escalates leaks nothing and sends all 30 safe drafts to a human.
 
-First real run, gpt-4.1-mini, 3 runs per language, **on the original 30-draft set** (before the
-expansion to 100)
-([results](evidence/live-2026-11-19/results/)):
+Judge study on the 100-draft sets: the 90 drafts per language that pass every deterministic
+stage go to the judge, 5 runs each, temperature 0
+([details, raw judgments and harness](evidence/judge-study-2026-11-19/README.md)):
 
-| lang | correct per run | judge-only drafts that leaked | safe drafts escalated |
-|---|---|---|---|
-| en | 30, 30, 30 / 30 | 0 of 36 judgments | 0 of 24 |
-| es | 29, 28, 29 / 30 | 3 of 36 (privacy claim 2×, "Veremos qué podemos hacer" 1×) | 1 of 24 |
+| model · lang | same verdict in all 5 runs | risky drafts that escaped ≥1 run (non-doubtful) | escaped judgments | safe drafts escalated |
+|---|---|---|---|---|
+| gpt-4.1-mini · ES | 88/90 | 4 | 21/300 | 1/150 |
+| gpt-4.1-mini · EN | 89/90 | 1 | 10/300 | 7/150 |
+| gpt-4.1 · ES | 90/90 | 0 | 5/300 (one doubtful draft) | 0/150 |
+| gpt-4.1 · EN | 89/90 | 2 | 10/300 | 3/150 |
 
-Thirty drafts are too few to talk about a rate. What it does show: the same draft can get a
-different verdict on another run, and on this set the judge did worse in Spanish.
+What it says, and what it does not:
+
+- No draft promising a refund, credit, replacement, discount or compensation, or admitting fault,
+  escaped in any condition. The escapes are evasive replies ("We're on it"), vague timing, safety
+  advice, and one data-protection refusal whose label is itself debatable.
+- Misses are systematic (the same draft, 5 of 5 runs), not random noise. That makes them fixable
+  by policy, not by retrying.
+- The Spanish gap with gpt-4.1-mini is real but small (4 vs 1 drafts) and disappears with gpt-4.1.
+  Few-shot examples and "rationale first" prompts did not help and were not adopted.
+- 90 judged drafts per language is still a small set. These are observations, not rates.
+
+Earlier 30-draft run with gpt-4.1-mini (3 runs): EN 30/30 every run, ES 29/28/29
+([live run](evidence/live-2026-11-19/README.md)).
 
 ## Known limits / Next step: reading the draft
 
@@ -306,6 +363,6 @@ src/HitlSendReply/
   Agent/        MAF wiring: tools, gate (auto-approval rule), runner, scripted chat client
   Evaluation/   judge measurement over data/drafts.jsonl
   Cli/          colored console UI (presentation only) and LLM settings
-tests/HitlSendReply.Tests/   94 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
+tests/HitlSendReply.Tests/   98 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
 evidence/                    test and console runs
 ```

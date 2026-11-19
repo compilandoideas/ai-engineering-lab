@@ -13,4 +13,3 @@ Conventions:
 - `experiments/<name>/` is self-contained: code, tests, README, data.
 - Fictional data and simulated providers by default; a real model is optional and configurable.
 - Results in a README come from a run that produced a file in the repo, or they are not there.
-- Plans live in `plans/`.

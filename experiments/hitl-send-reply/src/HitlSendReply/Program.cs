@@ -9,6 +9,7 @@ using HitlSendReply.Publishing;
 using Spectre.Console;
 
 ConsoleUi.Configure();
+ConsoleUi.T = UiText.For(Lang());
 var command = args.FirstOrDefault()?.ToLowerInvariant();
 return command switch
 {
@@ -52,7 +53,7 @@ static async Task<int> RunScenariosAsync(string which, Language language)
     if (selected.Count == 0)
         return Help();
 
-    ConsoleUi.Banner($"designed scenarios · {language.ToString().ToUpperInvariant()}");
+    ConsoleUi.Banner(ConsoleUi.T.Scenarios);
     foreach (var scenario in selected)
     {
         ConsoleUi.ScenarioHeader(scenario);
@@ -81,7 +82,7 @@ static async Task<int> RunLiveAsync(string ticketId, string message, Language la
     var auditPath = Path.Combine(Directory.GetCurrentDirectory(), "audit.jsonl");
     var lab = Lab.Create(model, new LlmReplyJudge(model), new ConsoleApprover(Console.In, Environment.UserName), language, auditPath: auditPath);
 
-    ConsoleUi.Banner("live model");
+    ConsoleUi.Banner(ConsoleUi.T.LiveModel);
     ConsoleUi.LiveHeader(settings.Model, ticketId, message);
     var result = await lab.Runner.RunAsync(ticketId, message);
     ConsoleUi.Trace(lab.Audit);

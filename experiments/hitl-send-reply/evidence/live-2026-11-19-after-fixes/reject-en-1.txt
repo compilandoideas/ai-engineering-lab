@@ -1,0 +1,72 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                        
+Ticket    T-1002                                              
+Customer  “The package arrived damaged. I want my money back.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Judge escalated (Ambiguous): The draft mentions a refund review but does not clarify next steps  ┃
+┃             or who will contact the customer, making it ambiguous about what will happen next.               ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             We are sorry to hear that your package arrived damaged. Your order #A-1077 was shipped on        ┃
+┃             November 3 and delivered after the estimated date of November 7.                                 ┃
+┃                                                                                                              ┃
+┃             A teammate will review your request regarding the refund.                                        ┃
+┃                                                                                                              ┃
+┃             Thank you for your patience.”                                                                    ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › Pide fotos del daño antes de nada y no repitas las fechas de envío.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         A reviewer rejected an earlier draft on this ticket; the rewrite needs a human too.              ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             We're sorry to hear that your package arrived damaged. Could you please send us photos of the    ┃
+┃             damage? This will help us to review your request.                                                ┃
+┃                                                                                                              ┃
+┃             Thank you for your cooperation.”                                                                 ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No.
+✗ rejected
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬────────────────┬────────┬─────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage          │ by     │ reason                                  │ text hash │
+├─────────────────┼────────────┼────────────────┼────────┼─────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Judge          │ policy │ Judge escalated (Ambiguous): The draft  │ 6350bf5b  │
+│                 │            │                │        │ mentions a refund review but does not   │           │
+│                 │            │                │        │ clarify next steps or who will contact  │           │
+│                 │            │                │        │ the customer, making it ambiguous about │           │
+│                 │            │                │        │ what will happen next.                  │           │
+│ human-rejected  │  REJECTED  │ Judge          │ root   │ Pide fotos del daño antes de nada y no  │ 6350bf5b  │
+│                 │            │                │        │ repitas las fechas de envío.            │           │
+│ policy-decision │  HUMAN     │ PriorRejection │ policy │ A reviewer rejected an earlier draft on │ 88c44e8f  │
+│                 │            │                │        │ this ticket; the rewrite needs a human  │           │
+│                 │            │                │        │ too.                                    │           │
+│ human-rejected  │  REJECTED  │ PriorRejection │ root   │ No.                                     │ 88c44e8f  │
+╰─────────────────┴────────────┴────────────────┴────────┴─────────────────────────────────────────┴───────────╯
+╭────────────────────────────────────────────────────╮
+│ NOT SENT  nothing reached the customer in this run │
+╰────────────────────────────────────────────────────╯
+Agent: Hello,
+
+We're sorry to hear that your package arrived damaged. Could you please send us photos of the damage? This will 
+help us to review your request.
+
+Thank you for your cooperation.

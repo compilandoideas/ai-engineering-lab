@@ -1,0 +1,23 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                          
+Ticket    T-1002                                                
+Customer  “El paquete llegó dañado. Quiero mi dinero de vuelta.”
+
+                                              pipeline · audit log                                              
+╭─────────────────┬─────────────┬───────┬────────┬─────────────────────────────────────────────────┬───────────╮
+│ step            │ decision    │ stage │ by     │ reason                                          │ text hash │
+├─────────────────┼─────────────┼───────┼────────┼─────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  AUTO-SEND  │ Judge │ policy │ Permissions, duplicate and facts verified;      │ ee13ea2b  │
+│                 │             │       │        │ judge raised nothing.                           │           │
+│ sent            │  SENT       │       │ policy │                                                 │ ee13ea2b  │
+╰─────────────────┴─────────────┴───────┴────────┴─────────────────────────────────────────────────┴───────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to mateo.rojas@example.com via Email                                                                    │
+│ “Hola, lamentamos que el paquete haya llegado dañado. El pedido #A-1077 fue enviado el 3 de noviembre de     │
+│ 2026 y entregado el 7 de noviembre de 2026. Un compañero revisará su solicitud y se pondrá en contacto con   │
+│ usted.”                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: Hola, lamentamos que el paquete haya llegado dañado. El pedido #A-1077 fue enviado el 3 de noviembre de 
+2026 y entregado el 7 de noviembre de 2026. Un compañero revisará su solicitud y se pondrá en contacto con 
+usted.

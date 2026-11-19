@@ -1,0 +1,57 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                          
+Ticket    T-1002                                                
+Customer  “El paquete llegó dañado. Quiero mi dinero de vuelta.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Judge escalated (Commitment): The draft commits to a refund review, which is a commitment that   ┃
+┃             requires escalation.                                                                             ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Gracias por contactarnos acerca del pedido #A-1077, entregado tras ser enviado el 3 de          ┃
+┃             noviembre de 2026. Lamentamos que el paquete haya llegado dañado. Un compañero revisará su       ┃
+┃             solicitud de reembolso.”                                                                         ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › Pide fotos del daño antes de nada y no repitas las fechas de envío.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         A reviewer rejected an earlier draft on this ticket; the rewrite needs a human too.              ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Lamentamos que el paquete haya llegado dañado. Para poder ayudarle mejor, ¿podría enviarnos     ┃
+┃             fotos del daño, por favor? Un compañero revisará su solicitud de reembolso.”                     ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No.
+✗ rejected
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬────────────────┬────────┬─────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage          │ by     │ reason                                  │ text hash │
+├─────────────────┼────────────┼────────────────┼────────┼─────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Judge          │ policy │ Judge escalated (Commitment): The draft │ 05ef8c49  │
+│                 │            │                │        │ commits to a refund review, which is a  │           │
+│                 │            │                │        │ commitment that requires escalation.    │           │
+│ human-rejected  │  REJECTED  │ Judge          │ root   │ Pide fotos del daño antes de nada y no  │ 05ef8c49  │
+│                 │            │                │        │ repitas las fechas de envío.            │           │
+│ policy-decision │  HUMAN     │ PriorRejection │ policy │ A reviewer rejected an earlier draft on │ d87fa50b  │
+│                 │            │                │        │ this ticket; the rewrite needs a human  │           │
+│                 │            │                │        │ too.                                    │           │
+│ human-rejected  │  REJECTED  │ PriorRejection │ root   │ No.                                     │ d87fa50b  │
+╰─────────────────┴────────────┴────────────────┴────────┴─────────────────────────────────────────┴───────────╯
+╭────────────────────────────────────────────────────╮
+│ NOT SENT  nothing reached the customer in this run │
+╰────────────────────────────────────────────────────╯
+Agent: Lamentamos que el paquete haya llegado dañado. Para ayudarle mejor, ¿podría enviarnos fotos del daño, por
+favor? Un compañero revisará su solicitud de reembolso.
