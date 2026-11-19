@@ -20,6 +20,13 @@ public sealed record JudgeSignal(bool Escalate, JudgeCategory Category, string R
 /// <summary>
 /// Reviews a draft reply. Sees only the draft and the order facts, never the customer's message,
 /// so instructions injected by the customer cannot reach it. Port: implemented by adapters in Judge/.
+/// <para>
+/// Extension point for more detection layers. A cheap deterministic screen (lexicon/rules), a
+/// rubric judge or a second model can be chained here behind one composite <see cref="IReplyJudge"/>
+/// with an OR rule: escalate if any layer escalates, and treat a layer that fails or times out as
+/// an escalation. No layer can turn another layer's escalation into a send. See README,
+/// "Detection layers".
+/// </para>
 /// </summary>
 public interface IReplyJudge
 {

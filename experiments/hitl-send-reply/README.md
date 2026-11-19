@@ -351,6 +351,35 @@ only turns free text into data the code can check. Because the extractor can mis
 the rules stay as a second reader: if either finds an unverifiable claim, or they disagree, the
 draft goes to a human.
 
+## Detection layers you can add
+
+The judge is a port (`IReplyJudge`), so more detection layers chain behind it without touching
+the policy. Today the lab runs deterministic checks plus one LLM judge. The layering below is the
+design for adding more; the extra layers are **not implemented**.
+
+```
+draft ──► rules / lexicon ──► LLM judge (or rubric) ──► auto-send
+              │                     │
+              └──── any flag ───────┴──────────────────► human
+```
+
+| Layer | Catches | Misses | Cost |
+|---|---|---|---|
+| Deterministic checks (implemented) | permissions, duplicates, prior rejection, wrong order id / date / amount / status | meaning: right value attached to the wrong field | free, deterministic |
+| Lexicon screen (not implemented) | known risky wording: "refund", "our fault", "guarantee", "we're on it", "reembolso", "culpa nuestra" | paraphrases, new wording | free, deterministic |
+| LLM judge (implemented) | commitments, fault, legal, vague timing, safety advice, in any phrasing | the same draft can flip between runs; weaker models miss vague replies systematically | one model call |
+| Rubric judge / second model (not implemented) | the judge's blind spots, if they do not overlap | shared blind spots | one more call |
+| Human | everything above escalates | only what reaches auto-send unseen | reviewer time |
+
+How they combine: **escalate if any layer escalates**, and a layer that errors or times out
+counts as an escalation. Layers only add reasons to stop; none can override another's
+escalation into a send. Cheap layers go first so obvious cases never pay for a model call.
+
+What this costs: every layer adds false positives (more human reviews). Whether a layer earns
+its place is a measurement, not a guess: run `evaluate` with and without it on the same labeled
+datasets and compare escapes and false positives. Baseline numbers for a lexicon layer and a
+rubric judge are not measured yet.
+
 ## Limitations
 
 - **Value check, not meaning check** (see the section above). The fact checker confirms that a stated date exists in the

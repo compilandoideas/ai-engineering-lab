@@ -70,6 +70,8 @@ public sealed class PublishPolicy(
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(options.JudgeTimeout);
+        // One judge today. Additional layers compose behind IReplyJudge (escalate if any escalates),
+        // so this call site and the decision order above stay the same.
         return await judge.EvaluateAsync(text, ticket, cts.Token).WaitAsync(cts.Token);
     }
 }
