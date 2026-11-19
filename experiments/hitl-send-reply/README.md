@@ -309,7 +309,23 @@ phrases were removed. With the clean prompt
 ([measurement](evidence/judge-clean-prompt-2026-11-19/README.md)): gpt-4.1 escapes 1 doubtful
 draft in ES and 1 in EN (D84, 3 of 5 runs); gpt-4.1-mini escapes 3 in ES and 2 in EN; E20 escapes
 0 of 5 everywhere. This is still the development set: the categories were chosen after seeing the
-failures, so a blind set is needed before these numbers generalize.
+failures.
+
+**Blind set.** To check that, 40 new drafts per language (20 safe, 20 that must escalate) were
+written without seeing the development set, the prompt, the rules or any result
+([`heldout/`](heldout/), [measurement](evidence/judge-blind-2026-11-19/README.md); labels still
+under human review). With gpt-4.1, 5 runs:
+
+| Blind set, gpt-4.1 | Stable | Escaped (of 20) | False positives (of 20) |
+|---|---|---|---|
+| ES | 39/40 | 2 | 1 |
+| EN | 39/40 | 2 (one labeled doubtful) | 2 (one is the fact checker) |
+
+No refund, replacement, compensation or fault draft escaped. All escapes were evasive replies
+("Your case is being handled with the priority it deserves", "Considérelo resuelto") or a doubtful
+security statement, the same class that was hard on the development set. One false positive is
+the fact checker reading "can be cancelled from My Orders" as a status claim. With 40 drafts per
+language one draft is 5 points: these are counts, not rates.
 
 What it says, and what it does not:
 
@@ -376,7 +392,7 @@ draft ──► rules / lexicon ──► LLM judge (or rubric) ──► auto-s
 | Layer | Catches | Misses | Cost |
 |---|---|---|---|
 | Deterministic checks (implemented) | permissions, duplicates, prior rejection, wrong order id / date / amount / status | meaning: right value attached to the wrong field | free, deterministic |
-| Lexicon screen (measured offline, not in the app) | known risky wording: "refund", "our fault", "guarantee", "we're on it", "reembolso", "culpa nuestra" | paraphrases: missed 9 drafts in ES and 3 in EN, including money promises in plain words ("le mandamos otro", "le regalamos el envío") | free, deterministic |
+| Lexicon screen (measured offline, not in the app) | known risky wording: "refund", "our fault", "guarantee", "we're on it", "reembolso", "culpa nuestra" | paraphrases: missed 9/3 drafts (ES/EN) on the development set, and 10 and 12 of 20 on the blind set. **Not recommended** | free, deterministic |
 | Simple LLM judge (implemented, default) | commitments, fault, legal, vague timing, safety advice, in any phrasing; never missed a money promise | the same draft can flip between runs; weaker models miss specific drafts systematically | one model call |
 | Rubric judge (implemented, opt-in) | one finding per category with a quote; escaped nothing | sends 43–73% of safe drafts to a human, mostly on "vague" | about 2.3× the simple judge |
 | Human | everything above escalates | only what reaches auto-send unseen | reviewer time |
@@ -402,8 +418,11 @@ Measured on the same 90 drafts per language, 5 runs each (simple judge with the 
 | Rules + simple judge (either model) | 0 | 5/150 |
 
 Reading: the rubric buys no safety here and costs a lot of reviews, so it stays opt-in. Rules plus
-the simple judge closed every escape, but the rules were written by the dataset's author, so that
-zero is optimistic until it is checked on a held-out set.
+the simple judge closed every escape on the development set, but the rules were written by the
+dataset's author. On the blind set that zero did not hold: the rules missed 10 (ES) and 12 (EN) of
+20, and adding them to gpt-4.1 caught nothing new while adding 4 to 5 false positives. So the
+lexicon layer stays out; the gap that remains (evasive replies) is a judge problem, not a wording
+list problem.
 
 ## Limitations
 
