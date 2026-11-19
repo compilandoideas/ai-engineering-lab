@@ -1,0 +1,40 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                          
+Ticket    T-1002                                                
+Customer  “El paquete llegó dañado. Quiero mi dinero de vuelta.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'enviado' contradicts the record (order is Delivered).                              ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Gracias por contactarnos. Su pedido #A-1077 fue entregado después de ser enviado el 3 de        ┃
+┃             noviembre de 2026. Un compañero revisará su solicitud sobre el paquete dañado y el reembolso.”   ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › Pide fotos del daño antes de nada y no repitas las fechas de envío.
+✗ rejected
+
+                                              pipeline · audit log                                              
+╭─────────────────┬─────────────┬───────┬────────┬─────────────────────────────────────────────────┬───────────╮
+│ step            │ decision    │ stage │ by     │ reason                                          │ text hash │
+├─────────────────┼─────────────┼───────┼────────┼─────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN      │ Facts │ policy │ Status claim 'enviado' contradicts the record   │ 487a035d  │
+│                 │             │       │        │ (order is Delivered).                           │           │
+│ human-rejected  │  REJECTED   │ Facts │ root   │ Pide fotos del daño antes de nada y no repitas  │ 487a035d  │
+│                 │             │       │        │ las fechas de envío.                            │           │
+│ policy-decision │  AUTO-SEND  │ Judge │ policy │ Permissions, duplicate and facts verified;      │ e1ba8da0  │
+│                 │             │       │        │ judge raised nothing.                           │           │
+│ sent            │  SENT       │       │ policy │                                                 │ e1ba8da0  │
+╰─────────────────┴─────────────┴───────┴────────┴─────────────────────────────────────────────────┴───────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to mateo.rojas@example.com via Email                                                                    │
+│ “Gracias por contactarnos. Para poder ayudarle mejor, ¿podría enviarnos fotos del paquete dañado? Un         │
+│ compañero revisará su solicitud una vez que recibamos esta información.”                                     │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: Gracias por contactarnos. Para poder ayudarle mejor, ¿podría enviarnos fotos del paquete dañado? Un 
+compañero revisará su solicitud una vez que recibamos esta información.

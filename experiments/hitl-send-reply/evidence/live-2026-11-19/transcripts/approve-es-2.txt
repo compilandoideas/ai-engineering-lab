@@ -1,0 +1,38 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                          
+Ticket    T-1002                                                
+Customer  “El paquete llegó dañado. Quiero mi dinero de vuelta.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'fue enviado' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hola, lamentamos que el paquete haya llegado dañado. El pedido #A-1077 fue enviado el 3 de      ┃
+┃             noviembre de 2026 y entregado según lo estimado el 7 de noviembre. Un compañero revisará su      ┃
+┃             solicitud respecto al reembolso.”                                                                ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › y
+✓ approved once · approval bound to this exact text
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬───────┬────────┬──────────────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage │ by     │ reason                                           │ text hash │
+├─────────────────┼────────────┼───────┼────────┼──────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'fue enviado' contradicts the       │ 2a64014c  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+│ human-approved  │  APPROVED  │ Facts │ root   │ Approved by reviewer.                            │ 2a64014c  │
+│ sent            │  SENT      │       │ root   │                                                  │ 2a64014c  │
+╰─────────────────┴────────────┴───────┴────────┴──────────────────────────────────────────────────┴───────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to mateo.rojas@example.com via Email                                                                    │
+│ “Hola, lamentamos que el paquete haya llegado dañado. El pedido #A-1077 fue enviado el 3 de noviembre de     │
+│ 2026 y entregado según lo estimado el 7 de noviembre. Un compañero revisará su solicitud respecto al         │
+│ reembolso.”                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: Hola, lamentamos que el paquete haya llegado dañado. El pedido #A-1077 fue enviado el 3 de noviembre de 
+2026 y entregado según lo estimado el 7 de noviembre. Un compañero revisará su solicitud respecto al reembolso.

@@ -54,10 +54,12 @@ public static class FactChecker
 
         foreach (var (pattern, status) in rules.Statuses)
         {
+            var current = masked;
             masked = Consume(masked, pattern, m =>
             {
-                if (status != order.Status)
-                    issues.Add($"Status claim '{m.Value.Trim()}' contradicts the record (order is {order.Status}).");
+                var negated = rules.NegationBefore.IsMatch(current[..m.Index]);
+                if (!StatusClaimHolds(status, negated, order.Status))
+                    issues.Add($"Status claim '{(negated ? "not " : "")}{m.Value.Trim()}' contradicts the record (order is {order.Status}).");
             });
         }
 
@@ -66,6 +68,27 @@ public static class FactChecker
             issues.Add($"Unverifiable number '{m.Value}'.");
 
         return new FactCheckResult(issues);
+    }
+
+    // Shipped → Delivered is a progression: "it shipped on the 3rd and was delivered on the 7th"
+    // is true for a delivered order. "Not yet shipped" is only true before shipping.
+    private static int Progress(OrderStatus s) => s switch
+    {
+        OrderStatus.Processing => 0,
+        OrderStatus.Shipped => 1,
+        OrderStatus.Delivered => 2,
+        _ => -1,
+    };
+
+    internal static bool StatusClaimHolds(OrderStatus claimed, bool negated, OrderStatus actual)
+    {
+        if (claimed == OrderStatus.Cancelled || actual == OrderStatus.Cancelled)
+            return negated ? actual != claimed : actual == claimed;
+
+        if (claimed == OrderStatus.Processing)
+            return negated ? actual != OrderStatus.Processing : actual == OrderStatus.Processing;
+
+        return negated ? Progress(actual) < Progress(claimed) : Progress(actual) >= Progress(claimed);
     }
 
     private static void CheckDate(DateOnly? date, string raw, Order order, List<string> issues)
@@ -99,6 +122,9 @@ internal sealed class ClaimPatterns
     public required Regex RelativeTime { get; init; }
     public required IReadOnlyList<(Regex Pattern, OrderStatus Status)> Statuses { get; init; }
 
+    /// <summary>A negation ending right before a status phrase (at most two words in between).</summary>
+    public required Regex NegationBefore { get; init; }
+
     public static ClaimPatterns For(Language language) => language == Language.Es ? Spanish : English;
 
     private static readonly ClaimPatterns English = new()
@@ -110,6 +136,7 @@ internal sealed class ClaimPatterns
         ],
         Money = new(@"(?:[$€£]\s?(?<amount>\d[\d,]*(?:\.\d{1,2})?))|(?:(?<amount>\d[\d,]*(?:\.\d{1,2})?)\s?(?:USD|EUR|dollars?|euros?)\b)", Opts),
         RelativeTime = new(@"\b(?:today|tonight|tomorrow|right away|immediately|asap|as soon as possible|this week|within\s+\w+(?:\s+\w+)?|in\s+(?:a|an|one|two|three|four|five|a few|a couple of)\s+(?:hours?|days?|weeks?)|next\s+(?:week|month|business day|monday|tuesday|wednesday|thursday|friday)|by\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|end of (?:day|week)))\b", Opts),
+        NegationBefore = new(@"(?:\bnot|n't|\bnever)(?:\s+(?:yet|been|be|have|has|was|is|it|already))*\s*$", Opts),
         Statuses =
         [
             (new(@"\b(?:has been |was |is )?(?:shipped|dispatched)\b", Opts), OrderStatus.Shipped),
@@ -130,6 +157,7 @@ internal sealed class ClaimPatterns
         // "$1.500", "$89,90", "89,90 USD", "1.500 pesos", "20 €"
         Money = new(@"(?:[$€£]\s?(?<amount>\d[\d.]*(?:,\d{1,2})?))|(?:(?<amount>\d[\d.]*(?:,\d{1,2})?)\s?(?:USD|EUR|€|d[oó]lares|euros|pesos)(?!\w))", Opts),
         RelativeTime = new(@"(?<!\w)(?:hoy|esta noche|mañana|pasado mañana|de inmediato|inmediatamente|enseguida|lo antes posible|cuanto antes|esta semana|dentro de\s+\w+(?:\s+\w+)?|en\s+(?:un|una|uno|dos|tres|cuatro|cinco|unos|unas|pocos|pocas)\s+(?:horas?|d[ií]as?|semanas?)|la\s+pr[oó]xima\s+semana|el\s+pr[oó]ximo\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|mes)|antes\s+del?\s+(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|fin de semana))(?!\w)", Opts),
+        NegationBefore = new(@"(?<!\w)(?:no|nunca|jam[aá]s)(?:\s+(?:se|ha|han|ha sido|fue|está|esta|todavía|aún|aun|lo|le|sido))*\s*$", Opts),
         Statuses =
         [
             (new(@"(?<!\w)(?:se\s+despach[oó]|(?:fue|ha sido|est[aá])\s+(?:despachado|enviado)|despachado|enviado)(?!\w)", Opts), OrderStatus.Shipped),

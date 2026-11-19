@@ -1,0 +1,120 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                        
+Ticket    T-1002                                              
+Customer  “The package arrived damaged. I want my money back.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'shipped' contradicts the record (order is Delivered).                              ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             We see that your order #A-1077 was delivered after being shipped on November 3rd with an         ┃
+┃             estimated delivery of November 7th. A teammate will review your request regarding the damaged    ┃
+┃             package.                                                                                         ┃
+┃                                                                                                              ┃
+┃             Thank you for your patience.”                                                                    ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No prometas reembolso; primero hay que verificar el daño con fotos.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'shipped' contradicts the record (order is Delivered).                              ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             We see that your order #A-1077 was delivered after being shipped on November 3rd with an         ┃
+┃             estimated delivery of November 7th. Could you please provide photos of the damaged package? A    ┃
+┃             teammate will review your request once we verify the situation.                                  ┃
+┃                                                                                                              ┃
+┃             Thank you for your cooperation.”                                                                 ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › Sigue sin estar bien.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'shipped' contradicts the record (order is Delivered).                              ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             We see that your order #A-1077 was delivered after being shipped on November 3rd with an         ┃
+┃             estimated delivery of November 7th. A teammate will review your request.                         ┃
+┃                                                                                                              ┃
+┃             Thank you for your patience.”                                                                    ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'shipped' contradicts the record (order is Delivered).                              ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             We see that your order #A-1077 was delivered after being shipped on November 3rd with an         ┃
+┃             estimated delivery date of November 7th. A teammate will review your request.                    ┃
+┃                                                                                                              ┃
+┃             Thank you for your patience.”                                                                    ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No.
+✗ rejected
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬───────┬────────┬──────────────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage │ by     │ reason                                           │ text hash │
+├─────────────────┼────────────┼───────┼────────┼──────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'shipped' contradicts the record    │ 82edf5d9  │
+│                 │            │       │        │ (order is Delivered).                            │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ No prometas reembolso; primero hay que verificar │ 82edf5d9  │
+│                 │            │       │        │ el daño con fotos.                               │           │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'shipped' contradicts the record    │ a28f18b6  │
+│                 │            │       │        │ (order is Delivered).                            │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ Sigue sin estar bien.                            │ a28f18b6  │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'shipped' contradicts the record    │ ab0ae918  │
+│                 │            │       │        │ (order is Delivered).                            │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ No.                                              │ ab0ae918  │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'shipped' contradicts the record    │ 404c1a6f  │
+│                 │            │       │        │ (order is Delivered).                            │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ No.                                              │ 404c1a6f  │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'was shipped' contradicts the       │ ad6ecc8f  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+╰─────────────────┴────────────┴───────┴────────┴──────────────────────────────────────────────────┴───────────╯
+╭────────────────────────────────────────────────────╮
+│ NOT SENT  nothing reached the customer in this run │
+╰────────────────────────────────────────────────────╯
+Agent: The ticket reply must be in English as per the ticket information. The previous replies have been 
+rejected because they do not meet certain criteria although they do not violate the instructions. The possible 
+reason is that the reply is rejecting or summarizing the customer request. They only want me to state the order 
+facts and say a teammate will review.
+
+I will try an even more minimal reply that only states the order facts and says a teammate will review, no 
+mention of patience or thanks which might have been considered promises or summary.
+
+Hello,
+
+Your order #A-1077 was shipped on November 3rd and delivered. A teammate will review your request.
+
+Thank you.

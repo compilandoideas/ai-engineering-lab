@@ -9,9 +9,10 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
 tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (76/76 tests, see
-> [evidence](evidence/)). The LLM judge has **not** been measured against a real model yet
-> (no results file exists), and the `live` mode has not been run against a real model either.
+> Status: experiment. The approval pipeline is compiled and tested (94/94 tests, see
+> [evidence](evidence/)). One run with a real model (gpt-4.1-mini, agent + judge) is in
+> [`evidence/live-2026-11-19/`](evidence/live-2026-11-19/); two problems it exposed are fixed
+> (see "What the real model showed"), and that run has not been repeated after the fixes yet.
 > This is not production code.
 
 ## Design
@@ -24,6 +25,8 @@ customer message ──► Agent (LLM) ──► send_reply(ticketId, text)
                            1. ticket exists, open          ── no ──► BLOCK (no human)
                            2. agent may reply on channel   ── no ──► BLOCK
                            3. same text already sent?      ── yes ─► BLOCK
+                              same text a reviewer rejected? ── yes ─► BLOCK
+                              any earlier rejection on ticket? ── yes ─► HUMAN
                            4. every date / amount / order id / status
                               in the text matches the record ── no ─► HUMAN
                            5. LLM judge: commitment, fault, legal,
@@ -124,6 +127,19 @@ AIAgent guarded = agent.AsBuilder()
 - An auto-approval rule can only approve or pass. Blocking without a human is done by the
   application answering the surfaced request with `CreateResponse(false, reason)`.
 
+### What the real model showed (gpt-4.1-mini, 2026-11-19) and what changed
+
+Source: [`evidence/live-2026-11-19/README.md`](evidence/live-2026-11-19/README.md).
+
+| Observed | Fix | Test |
+|---|---|---|
+| After a rejection, the agent rewrote toward the reviewer's reason and the rewrite **auto-sent** in 2 of 10 runs: no human saw the final text. | Any rejection on a ticket sends every later draft on that ticket to a human (`PriorRejection`). | `After_a_rejection_the_rewrite_goes_to_a_human_...` |
+| In 8 of 10 runs the agent proposed again despite "must not be retried"; once with the identical text. | The exact rejected text is blocked without asking again. | `Resending_the_exact_rejected_text_is_blocked_...` |
+| "aún no ha sido enviado" was read as "ha sido enviado". | Negation right before a status phrase is understood (EN/ES). | `*_negation_is_understood` |
+| "fue enviado el 3 … y entregado el 7" flagged on a delivered order. | Status is a progression: shipped is true for a delivered order. | `Shipped_then_delivered_is_true_...` |
+
+No refund promise reached a customer in any of the 13 live runs.
+
 ## The seven designed cases
 
 Run through the real agent pipeline with a scripted model (`ScriptedChatClient`) and a scripted
@@ -140,10 +156,11 @@ test runs in both. The real judge is measured separately (below).
 | 6 | Same text sent twice | Block, no human | Idempotency key (ticket + SHA-256 of text) | `S6_...` |
 | 7 | Judge down / timeout | Human | Errors and timeouts are never "clear" | `S7_...`, `Judge_timeout_...` |
 
-Plus: a rejected draft is rewritten and the new call goes through the whole policy again; no
+Plus: a rejected draft is rewritten, the new call goes through the whole policy again and a
+human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (76 passed),
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (94 passed),
 [`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
 (console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
 (rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
@@ -204,9 +221,18 @@ The `evaluate` command reports, per run:
 
 Baseline without any model (tests): a judge that never escalates leaks exactly those 12
 judge-dependent drafts; every fact- and rule-based case is still caught. A judge that always
-escalates leaks nothing and sends all 8 safe drafts to a human. The real model sits somewhere
-in between. **Its numbers are not here yet** because no run has been made; they will be added
-from the results file, with the model name.
+escalates leaks nothing and sends all 8 safe drafts to a human.
+
+First real run, gpt-4.1-mini, 3 runs per language
+([results](evidence/live-2026-11-19/results/)):
+
+| lang | correct per run | judge-only drafts that leaked | safe drafts escalated |
+|---|---|---|---|
+| en | 30, 30, 30 / 30 | 0 of 36 judgments | 0 of 24 |
+| es | 29, 28, 29 / 30 | 3 of 36 (privacy claim 2×, "Veremos qué podemos hacer" 1×) | 1 of 24 |
+
+Thirty drafts are too few to talk about a rate. What it does show: the same draft can get a
+different verdict on another run, and on this set the judge did worse in Spanish.
 
 ## Known limits / Next step: reading the draft
 
@@ -225,9 +251,9 @@ Anything else that looks like a claim (a stray number, a format it does not know
 **the draft goes to a human.** That keeps auto-send safe, at the cost of extra reviews.
 
 **Where rules stop.** Rules check *values*, not *meaning*. "Shipped on November 21" passes if
-November 21 is any date on the order, even though it is the delivery date. "It hasn't been
-delivered yet" escalates because it mentions "delivered". Covering every phrasing with rules is
-a losing game.
+November 21 is any date on the order, even though it is the delivery date. Negation only works
+when it sits right before the status ("has not been shipped"), not further away. Covering every
+phrasing with rules is a losing game.
 
 **Next step.** Let the LLM *read* and the code *decide*: an extractor model returns the claims it
 finds as typed JSON, and the code compares each field with the ticket.
@@ -247,8 +273,9 @@ draft goes to a human.
 
 - **Value check, not meaning check** (see the section above). The fact checker confirms that a stated date exists in the
   record, not that it is attached to the right field ("shipped on" vs "arrives on").
-- **Conservative extraction.** "Your order has not been delivered yet" mentions a status that
-  contradicts the record and escalates. That is a false positive by design.
+- **Conservative extraction.** Negation is recognized only right before the status phrase
+  ("has not been shipped", "aún no ha sido enviado"); a negation further away is not, and the
+  draft escalates. That is a false positive by design.
 - **Two languages only** (English, Spanish), chosen per ticket. In a Spanish ticket `$1,500` reads as
   1.5 and escalates; mixed formats are treated conservatively.
 - **"Edit" is not native.** The reviewer approves or rejects with a reason; the agent rewrites.
@@ -275,6 +302,6 @@ src/HitlSendReply/
   Agent/        MAF wiring: tools, gate (auto-approval rule), runner, scripted chat client
   Evaluation/   judge measurement over data/drafts.jsonl
   Cli/          colored console UI (presentation only) and LLM settings
-tests/HitlSendReply.Tests/   76 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
+tests/HitlSendReply.Tests/   94 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
 evidence/                    test and console runs
 ```

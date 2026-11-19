@@ -6,7 +6,7 @@ public sealed record PublishPolicyOptions(string AgentName, TimeSpan JudgeTimeou
 
 /// <summary>
 /// Decides what happens to a send_reply call. Order: ticket → permissions → duplicate →
-/// facts → judge. Deterministic checks can block or escalate; the judge can only escalate.
+/// prior rejection → facts → judge. Deterministic checks can block or escalate; the judge can only escalate.
 /// AutoSend requires every stage to pass. Any exception ends in NeedsHuman.
 /// </summary>
 public sealed class PublishPolicy(
@@ -14,7 +14,8 @@ public sealed class PublishPolicy(
     AgentPermissions permissions,
     IOutbox outbox,
     IReplyJudge judge,
-    PublishPolicyOptions options)
+    PublishPolicyOptions options,
+    IReviewHistory? reviews = null)
 {
     public async Task<PolicyDecision> EvaluateAsync(ReplyRequest request, CancellationToken cancellationToken = default)
     {
@@ -33,6 +34,15 @@ public sealed class PublishPolicy(
 
             if (outbox.HasSent(request.Key))
                 return PolicyDecision.Block(PolicyStage.Duplicate, "This exact text was already sent on this ticket.");
+
+            if (reviews?.WasRejected(request.Key) == true)
+                return PolicyDecision.Block(PolicyStage.PriorRejection, "A reviewer already rejected this exact text.");
+
+            // Observed with a real model: after a rejection the agent sometimes rewrote toward the
+            // reason and the rewrite auto-sent, so no human saw the final text. Not any more.
+            if (reviews?.HasRejection(ticket.Id) == true)
+                return PolicyDecision.Human(PolicyStage.PriorRejection,
+                    "A reviewer rejected an earlier draft on this ticket; the rewrite needs a human too.");
 
             if (string.IsNullOrWhiteSpace(request.Text))
                 return PolicyDecision.Block(PolicyStage.Facts, "Empty reply.");

@@ -12,7 +12,7 @@ public enum PolicyOutcome
     AutoSend,
 }
 
-public enum PolicyStage { Ticket, Permissions, Duplicate, Facts, Judge, Error }
+public enum PolicyStage { Ticket, Permissions, Duplicate, PriorRejection, Facts, Judge, Error }
 
 public sealed record PolicyDecision(PolicyOutcome Outcome, PolicyStage Stage, string Reason)
 {

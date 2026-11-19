@@ -1,0 +1,38 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                          
+Ticket    T-1002                                                
+Customer  “El paquete llegó dañado. Quiero mi dinero de vuelta.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Judge escalated (Fault): The draft admits fault by apologizing for the damaged package, which    ┃
+┃             requires escalation for review.                                                                  ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hola, su pedido #A-1077 fue entregado el 7 de noviembre de 2026. Lamento que el paquete llegara ┃
+┃             dañado. Un compañero revisará su solicitud y le responderá a la brevedad posible.”               ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › y
+✓ approved once · approval bound to this exact text
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬───────┬────────┬──────────────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage │ by     │ reason                                           │ text hash │
+├─────────────────┼────────────┼───────┼────────┼──────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Judge │ policy │ Judge escalated (Fault): The draft admits fault  │ 1e253f56  │
+│                 │            │       │        │ by apologizing for the damaged package, which    │           │
+│                 │            │       │        │ requires escalation for review.                  │           │
+│ human-approved  │  APPROVED  │ Judge │ root   │ Approved by reviewer.                            │ 1e253f56  │
+│ sent            │  SENT      │       │ root   │                                                  │ 1e253f56  │
+╰─────────────────┴────────────┴───────┴────────┴──────────────────────────────────────────────────┴───────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to mateo.rojas@example.com via Email                                                                    │
+│ “Hola, su pedido #A-1077 fue entregado el 7 de noviembre de 2026. Lamento que el paquete llegara dañado. Un  │
+│ compañero revisará su solicitud y le responderá a la brevedad posible.”                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: Hola, su pedido #A-1077 fue entregado el 7 de noviembre de 2026. Lamento que el paquete llegara dañado. 
+Un compañero revisará su solicitud y le responderá a la brevedad posible.

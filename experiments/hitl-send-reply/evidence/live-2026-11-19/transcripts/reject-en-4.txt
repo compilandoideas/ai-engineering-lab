@@ -1,0 +1,73 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                        
+Ticket    T-1002                                              
+Customer  “The package arrived damaged. I want my money back.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'was shipped' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Dear Customer, your order #A-1077 was shipped on November 3 and delivered by November 7. We are ┃
+┃             sorry to hear that your package arrived damaged. A teammate will review your request regarding   ┃
+┃             this issue.”                                                                                     ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No prometas reembolso; primero hay que verificar el daño con fotos.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'was shipped' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Dear Customer, your order #A-1077 was shipped on November 3 and delivered by November 7. We are ┃
+┃             sorry to hear that your package arrived damaged. Please provide photos of the damage so a        ┃
+┃             teammate can review your request.”                                                               ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › Sigue sin estar bien.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'was shipped' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Dear Customer, your order #A-1077 was shipped on November 3 and delivered by November 7. We are ┃
+┃             sorry to hear that your package arrived damaged. A teammate will review your request.”           ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No.
+✗ rejected
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬───────┬────────┬──────────────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage │ by     │ reason                                           │ text hash │
+├─────────────────┼────────────┼───────┼────────┼──────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'was shipped' contradicts the       │ 6fad4415  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ No prometas reembolso; primero hay que verificar │ 6fad4415  │
+│                 │            │       │        │ el daño con fotos.                               │           │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'was shipped' contradicts the       │ 06016b16  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ Sigue sin estar bien.                            │ 06016b16  │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'was shipped' contradicts the       │ 238a7211  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ No.                                              │ 238a7211  │
+╰─────────────────┴────────────┴───────┴────────┴──────────────────────────────────────────────────┴───────────╯
+╭────────────────────────────────────────────────────╮
+│ NOT SENT  nothing reached the customer in this run │
+╰────────────────────────────────────────────────────╯
+Agent: Dear Customer, your order #A-1077 was shipped on November 3 and delivered by November 7. We are sorry to 
+hear that your package arrived damaged. A teammate will review your request.

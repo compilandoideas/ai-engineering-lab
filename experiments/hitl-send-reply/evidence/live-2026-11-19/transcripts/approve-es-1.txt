@@ -1,0 +1,35 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                          
+Ticket    T-1002                                                
+Customer  “El paquete llegó dañado. Quiero mi dinero de vuelta.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Unverifiable number '1077'.                                                                      ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Gracias por contactarnos sobre su pedido A-1077 que fue entregado. Lamentamos que el paquete    ┃
+┃             haya llegado dañado. Un compañero revisará su solicitud y le responderá pronto.”                 ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › y
+✓ approved once · approval bound to this exact text
+
+                                              pipeline · audit log                                              
+╭──────────────────────┬───────────────┬─────────┬──────────┬────────────────────────────────────┬─────────────╮
+│ step                 │ decision      │ stage   │ by       │ reason                             │ text hash   │
+├──────────────────────┼───────────────┼─────────┼──────────┼────────────────────────────────────┼─────────────┤
+│ policy-decision      │  HUMAN        │ Facts   │ policy   │ Unverifiable number '1077'.        │ 64a6a113    │
+│ human-approved       │  APPROVED     │ Facts   │ root     │ Approved by reviewer.              │ 64a6a113    │
+│ sent                 │  SENT         │         │ root     │                                    │ 64a6a113    │
+╰──────────────────────┴───────────────┴─────────┴──────────┴────────────────────────────────────┴─────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to mateo.rojas@example.com via Email                                                                    │
+│ “Gracias por contactarnos sobre su pedido A-1077 que fue entregado. Lamentamos que el paquete haya llegado   │
+│ dañado. Un compañero revisará su solicitud y le responderá pronto.”                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: Gracias por contactarnos sobre su pedido A-1077 que fue entregado. Lamentamos que el paquete haya llegado
+dañado. Un compañero revisará su solicitud y le responderá pronto.

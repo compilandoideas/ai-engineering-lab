@@ -1,0 +1,72 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                          
+Ticket    T-1002                                                
+Customer  “El paquete llegó dañado. Quiero mi dinero de vuelta.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'fue enviado' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hola, gracias por contactarnos. El pedido #A-1077 fue enviado el 3 de noviembre y entregado el  ┃
+┃             7 de noviembre. Un compañero revisará su solicitud sobre el paquete dañado y el reembolso.”      ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No prometas reembolso; primero hay que verificar el daño con fotos.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'fue enviado' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hola, gracias por contactarnos. El pedido #A-1077 fue enviado el 3 de noviembre y entregado el  ┃
+┃             7 de noviembre. Para poder ayudarle mejor, ¿podría enviarnos fotos del daño en el paquete? Un    ┃
+┃             compañero revisará su solicitud una vez tengamos esta información.”                              ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › Sigue sin estar bien.
+✗ rejected
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'fue enviado' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   mateo.rojas@example.com (from the ticket, not from the model)                                    ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hola, gracias por contactarnos. El pedido #A-1077 fue enviado el 3 de noviembre y entregado el  ┃
+┃             7 de noviembre. Un compañero revisará su solicitud sobre el paquete dañado.”                     ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No.
+✗ rejected
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬───────┬────────┬──────────────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage │ by     │ reason                                           │ text hash │
+├─────────────────┼────────────┼───────┼────────┼──────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'fue enviado' contradicts the       │ fc44c4e3  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ No prometas reembolso; primero hay que verificar │ fc44c4e3  │
+│                 │            │       │        │ el daño con fotos.                               │           │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'fue enviado' contradicts the       │ 3e07f8f5  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ Sigue sin estar bien.                            │ 3e07f8f5  │
+│ policy-decision │  HUMAN     │ Facts │ policy │ Status claim 'fue enviado' contradicts the       │ 84102321  │
+│                 │            │       │        │ record (order is Delivered).                     │           │
+│ human-rejected  │  REJECTED  │ Facts │ root   │ No.                                              │ 84102321  │
+╰─────────────────┴────────────┴───────┴────────┴──────────────────────────────────────────────────┴───────────╯
+╭────────────────────────────────────────────────────╮
+│ NOT SENT  nothing reached the customer in this run │
+╰────────────────────────────────────────────────────╯
+Agent: Hola, gracias por contactarnos. El pedido #A-1077 fue enviado el 3 de noviembre y entregado el 7 de 
+noviembre. Un compañero revisará su solicitud.

@@ -1,0 +1,18 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                      
+Ticket    T-1005                                            
+Customer  “Quiero reabrir mi caso, el producto no funciona.”
+
+                                              pipeline · audit log                                              
+╭───────────────────────┬─────────────┬───────────┬──────────┬──────────────────────────────────┬──────────────╮
+│ step                  │ decision    │ stage     │ by       │ reason                           │ text hash    │
+├───────────────────────┼─────────────┼───────────┼──────────┼──────────────────────────────────┼──────────────┤
+│ policy-decision       │  BLOCK      │ Ticket    │ policy   │ Ticket T-1005 is closed.         │ 91a67f6f     │
+│ policy-decision       │  BLOCK      │ Ticket    │ policy   │ Ticket T-1005 is closed.         │ 91a67f6f     │
+╰───────────────────────┴─────────────┴───────────┴──────────┴──────────────────────────────────┴──────────────╯
+╭────────────────────────────────────────────────────╮
+│ NOT SENT  nothing reached the customer in this run │
+╰────────────────────────────────────────────────────╯
+Agent: Gracias por contactarnos respecto al pedido A-0999. Su pedido fue enviado el 2 de octubre de 2026 y fue 
+entregado alrededor del 6 de octubre de 2026. Un compañero revisará su solicitud para darle seguimiento.

@@ -1,0 +1,59 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                        
+Ticket    T-1002                                              
+Customer  “The package arrived damaged. I want my money back.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Status claim 'was shipped' contradicts the record (order is Delivered).                          ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             Thank you for reaching out regarding your order #A-1077. We see that your package was shipped on ┃
+┃             November 3, 2026, and delivered by November 7, 2026. We are sorry to hear it arrived damaged. A  ┃
+┃             teammate will review your request and get back to you shortly.                                   ┃
+┃                                                                                                              ┃
+┃             Best regards.”                                                                                   ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › n
+Reason (sent back to the agent) › No prometas reembolso; primero hay que verificar el daño con fotos.
+✗ rejected
+
+                                              pipeline · audit log                                              
+╭─────────────────┬─────────────┬───────┬────────┬─────────────────────────────────────────────────┬───────────╮
+│ step            │ decision    │ stage │ by     │ reason                                          │ text hash │
+├─────────────────┼─────────────┼───────┼────────┼─────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN      │ Facts │ policy │ Status claim 'was shipped' contradicts the      │ 829996b9  │
+│                 │             │       │        │ record (order is Delivered).                    │           │
+│ human-rejected  │  REJECTED   │ Facts │ root   │ No prometas reembolso; primero hay que          │ 829996b9  │
+│                 │             │       │        │ verificar el daño con fotos.                    │           │
+│ policy-decision │  AUTO-SEND  │ Judge │ policy │ Permissions, duplicate and facts verified;      │ 43d1b595  │
+│                 │             │       │        │ judge raised nothing.                           │           │
+│ sent            │  SENT       │       │ policy │                                                 │ 43d1b595  │
+╰─────────────────┴─────────────┴───────┴────────┴─────────────────────────────────────────────────┴───────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to li.wang@example.com via Email                                                                        │
+│ “Hello,                                                                                                      │
+│                                                                                                              │
+│ Thank you for contacting us about your order #A-1077, delivered on November 7, 2026. We are sorry to hear    │
+│ that the package arrived damaged.                                                                            │
+│                                                                                                              │
+│ To assist you further, could you please provide photos of the damaged item? A teammate will review your case │
+│ once we receive the photos.                                                                                  │
+│                                                                                                              │
+│ Best regards.”                                                                                               │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: Hello,
+
+Thank you for contacting us about your order #A-1077, delivered on November 7, 2026. We are sorry to hear that 
+the package arrived damaged.
+
+To assist you further, could you please provide photos of the damaged item? A teammate will review your case 
+once we receive the photos.
+
+Best regards.

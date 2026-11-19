@@ -1,0 +1,56 @@
+── HITL · send_reply · live model ──────────────────────────────────────────────────────────────────────────────
+
+Model     gpt-4.1-mini                                        
+Ticket    T-1002                                              
+Customer  “The package arrived damaged. I want my money back.”
+
+
+┏━ HUMAN REVIEW REQUIRED ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                              ┃
+┃ Why         Judge escalated (Ambiguous): The draft mentions a refund without confirming or denying it, which ┃
+┃             is ambiguous about what will happen next.                                                        ┃
+┃ Ticket      T-1002                                                                                           ┃
+┃ Recipient   li.wang@example.com (from the ticket, not from the model)                                        ┃
+┃ Channel     Email                                                                                            ┃
+┃ Exact text  “Hello,                                                                                          ┃
+┃                                                                                                              ┃
+┃             Thank you for reaching out regarding your order #A-1077. We see that your package was delivered  ┃
+┃             after shipping on November 3 and an estimated delivery on November 7. A teammate will review     ┃
+┃             your request about the damaged package and your refund.                                          ┃
+┃                                                                                                              ┃
+┃             Best regards,                                                                                    ┃
+┃             Customer Support”                                                                                ┃
+┃                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Approve this exact reply? y approve once · n reject with reason › y
+✓ approved once · approval bound to this exact text
+
+                                              pipeline · audit log                                              
+╭─────────────────┬────────────┬───────┬────────┬──────────────────────────────────────────────────┬───────────╮
+│ step            │ decision   │ stage │ by     │ reason                                           │ text hash │
+├─────────────────┼────────────┼───────┼────────┼──────────────────────────────────────────────────┼───────────┤
+│ policy-decision │  HUMAN     │ Judge │ policy │ Judge escalated (Ambiguous): The draft mentions  │ 6530dd54  │
+│                 │            │       │        │ a refund without confirming or denying it, which │           │
+│                 │            │       │        │ is ambiguous about what will happen next.        │           │
+│ human-approved  │  APPROVED  │ Judge │ root   │ Approved by reviewer.                            │ 6530dd54  │
+│ sent            │  SENT      │       │ root   │                                                  │ 6530dd54  │
+╰─────────────────┴────────────┴───────┴────────┴──────────────────────────────────────────────────┴───────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ SENT to li.wang@example.com via Email                                                                        │
+│ “Hello,                                                                                                      │
+│                                                                                                              │
+│ Thank you for reaching out regarding your order #A-1077. We see that your package was delivered after        │
+│ shipping on November 3 and an estimated delivery on November 7. A teammate will review your request about    │
+│ the damaged package and your refund.                                                                         │
+│                                                                                                              │
+│ Best regards,                                                                                                │
+│ Customer Support”                                                                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Agent: Hello,
+
+Thank you for reaching out regarding your order #A-1077. We see that your package was delivered after shipping 
+on November 3 and an estimated delivery on November 7. A teammate will review your request about the damaged 
+package and your refund.
+
+Best regards,
+Customer Support

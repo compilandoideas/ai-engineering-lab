@@ -196,18 +196,22 @@ public class ScenarioTests
         var judge = new ScriptedJudge(text => text == risky
             ? JudgeSignal.EscalateFor(JudgeCategory.Commitment, "Promises a refund.")
             : JudgeSignal.Clear());
-        var approver = Rejects("No refund promises.");
+        var approver = new ScriptedApprover(p => p.Text == risky
+            ? HumanVerdict.Reject("reviewer@test", "No refund promises.")
+            : HumanVerdict.Approve("reviewer@test"));
         var lab = Lab.Create(new ScriptedChatClient("T-1002", [risky, safe]), judge, approver);
 
         var result = await lab.Runner.RunAsync("T-1002", "Damaged package, refund me.");
 
-        Assert.Single(approver.Prompts);
-        Assert.Equal(2, judge.Calls);
+        // The rewrite is a new call that goes through the whole policy again. Because a reviewer
+        // rejected a draft on this ticket, it is not auto-sent: a human sees the final text.
+        Assert.Equal(2, approver.Prompts.Count);
+        Assert.Equal(1, judge.Calls); // the rewrite stops at PriorRejection, before the judge
         var sent = Assert.Single(lab.Outbox.Sent);
         Assert.Equal(safe, sent.Text);
-        Assert.Equal(1, result.ApprovalRounds);
+        Assert.Equal(2, result.ApprovalRounds);
         Assert.Equal(
-            ["policy-decision:NeedsHuman", "human-rejected:Rejected", "policy-decision:AutoSend", "sent:"],
+            ["policy-decision:NeedsHuman", "human-rejected:Rejected", "policy-decision:NeedsHuman", "human-approved:Approved", "sent:"],
             lab.Audit.Entries.Select(e => $"{e.Event}:{e.Outcome}"));
     }
 }

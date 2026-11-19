@@ -17,6 +17,7 @@ public sealed class SupportRunner(
     ReplyGate gate,
     IHumanApprover human,
     ApprovalLedger ledger,
+    IReviewHistory reviews,
     IAuditLog audit,
     ITicketStore tickets,
     int maxApprovalRounds = 4)
@@ -79,6 +80,8 @@ public sealed class SupportRunner(
 
         if (verdict.Approved)
             ledger.Authorize(reply.Key, verdict.Reviewer);
+        else
+            reviews.RecordRejection(reply.Key, verdict.Reason);
 
         return CreateResponse(request, verdict.Approved, verdict.Reason);
     }
