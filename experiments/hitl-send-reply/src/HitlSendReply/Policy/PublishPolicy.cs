@@ -1,6 +1,4 @@
 using HitlSendReply.Domain;
-using HitlSendReply.Judge;
-using HitlSendReply.Publishing;
 
 namespace HitlSendReply.Policy;
 
@@ -14,7 +12,7 @@ public sealed record PublishPolicyOptions(string AgentName, TimeSpan JudgeTimeou
 public sealed class PublishPolicy(
     ITicketStore tickets,
     AgentPermissions permissions,
-    FakeOutbox outbox,
+    IOutbox outbox,
     IReplyJudge judge,
     PublishPolicyOptions options)
 {

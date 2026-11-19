@@ -1,6 +1,6 @@
 using HitlSendReply.Domain;
 
-namespace HitlSendReply.Judge;
+namespace HitlSendReply.Policy;
 
 public enum JudgeCategory { None, Commitment, Fault, Legal, Ambiguous, Other }
 
@@ -19,7 +19,7 @@ public sealed record JudgeSignal(bool Escalate, JudgeCategory Category, string R
 
 /// <summary>
 /// Reviews a draft reply. Sees only the draft and the order facts, never the customer's message,
-/// so instructions injected by the customer cannot reach it.
+/// so instructions injected by the customer cannot reach it. Port: implemented by adapters in Judge/.
 /// </summary>
 public interface IReplyJudge
 {

@@ -12,9 +12,9 @@ namespace HitlSendReply;
 public sealed class Lab
 {
     public required ITicketStore Tickets { get; init; }
-    public required FakeOutbox Outbox { get; init; }
+    public required IOutbox Outbox { get; init; }
     public required ApprovalLedger Ledger { get; init; }
-    public required AuditLog Audit { get; init; }
+    public required IAuditLog Audit { get; init; }
     public required PublishPolicy Policy { get; init; }
     public required ReplyGate Gate { get; init; }
     public required SupportTools Tools { get; init; }

@@ -12,7 +12,7 @@ namespace HitlSendReply.Agent;
 /// evaluated once (memoized by call id), so the auto-approval rule and the orchestrator always
 /// see the same decision and the judge is not called twice.
 /// </summary>
-public sealed class ReplyGate(PublishPolicy policy, ApprovalLedger ledger, AuditLog audit, ITicketStore tickets)
+public sealed class ReplyGate(PublishPolicy policy, ApprovalLedger ledger, IAuditLog audit, ITicketStore tickets)
 {
     private readonly ConcurrentDictionary<string, Lazy<Task<PolicyDecision>>> _decisions = new();
 

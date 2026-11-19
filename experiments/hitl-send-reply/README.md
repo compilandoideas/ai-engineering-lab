@@ -9,7 +9,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
 tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (71/71 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (76/76 tests, see
 > [evidence](evidence/)). The LLM judge has **not** been measured against a real model yet
 > (no results file exists), and the `live` mode has not been run against a real model either.
 > This is not production code.
@@ -62,8 +62,28 @@ All APIs below were compiled and exercised against `Microsoft.Agents.AI` 1.28.0 
 | Policy as the only auto-approval rule | `AsBuilder().UseToolApproval(new ToolApprovalAgentOptions { AutoApprovalRules = [gate.AutoApproveAsync], MaxAutoApprovalIterations = 2 })` | `Agent/SupportAgentFactory.cs`, `Agent/ReplyGate.cs` |
 | Block / human decision | `ToolApprovalRequestContent.CreateResponse(approved, reason)`, resumed with `RunAsync(..., session)` | `Agent/SupportRunner.cs` |
 
-The policy itself (`Policy/`, `Judge/`, `Domain/`, `Publishing/`) has no framework types, so it
-can be ported to Python without depending on the C# framework.
+## Policy is framework-agnostic; MAF is an adapter
+
+One project, folders as boundaries. The rule is the dependency direction, not the number of projects:
+
+```
+Cli/ (console UI) ──┐
+Agent/ (MAF)  ──────┼──►  Policy/  ──►  Domain/
+Judge/ (LLM)  ──────┤       ports: ITicketStore, IOutbox, IAuditLog, IReplyJudge
+Publishing/ (fakes) ┘
+```
+
+- `Domain/` and `Policy/` decide everything that matters (block, human, auto-send) and reference
+  neither Microsoft Agent Framework, `Microsoft.Extensions.AI`, the OpenAI SDK nor the UI.
+- `Agent/` adapts that policy to MAF: the auto-approval rule calls `ReplyGate`, the runner turns
+  decisions into `CreateResponse(...)`. Swap the framework and only this folder changes.
+- `Judge/LlmReplyJudge` is the only place that talks to a model for judgment.
+- `ArchitectureTests` (NetArchTest) fails the build's tests if `Domain/` or `Policy/` take a
+  dependency on a framework or on an adapter folder. A guard test checks the rule is not vacuous,
+  and it was verified by adding a temporary `Microsoft.Extensions.AI` reference to `Policy/` (the test failed).
+
+This is also what makes the Python port mechanical: `Domain/` + `Policy/` translate one to one;
+only the adapters change.
 
 ```csharp
 AIFunction sendReply = new ApprovalRequiredAIFunction(
@@ -123,7 +143,7 @@ test runs in both. The real judge is measured separately (below).
 Plus: a rejected draft is rewritten and the new call goes through the whole policy again; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (71 passed),
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (76 passed),
 [`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
 (console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
 (rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
@@ -188,9 +208,44 @@ escalates leaks nothing and sends all 8 safe drafts to a human. The real model s
 in between. **Its numbers are not here yet** because no run has been made; they will be added
 from the results file, with the model name.
 
+## Known limits / Next step: reading the draft
+
+**What the rules do today.** Before a draft can go out on its own, the policy extracts every
+factual claim from the text and compares it with the ticket:
+
+| Claim | English | Spanish |
+|---|---|---|
+| Order id | `#A-1042` | `#A-1042` |
+| Dates | `November 12`, `Nov 12th, 2026`, `2026-11-12` | `12 de noviembre`, `12/11`, `2026-11-12` |
+| Amounts | `$129.90`, `1,500 USD` | `$1.500`, `$89,90`, `89,90 USD` |
+| Status | shipped, delivered, being processed, cancelled | se despachó, fue entregado, en preparación, cancelado |
+| Time promises | today, tomorrow, within…, in two days, next week | hoy, mañana, dentro de…, en dos días, la próxima semana |
+
+Anything else that looks like a claim (a stray number, a format it does not know) is not guessed:
+**the draft goes to a human.** That keeps auto-send safe, at the cost of extra reviews.
+
+**Where rules stop.** Rules check *values*, not *meaning*. "Shipped on November 21" passes if
+November 21 is any date on the order, even though it is the delivery date. "It hasn't been
+delivered yet" escalates because it mentions "delivered". Covering every phrasing with rules is
+a losing game.
+
+**Next step.** Let the LLM *read* and the code *decide*: an extractor model returns the claims it
+finds as typed JSON, and the code compares each field with the ticket.
+
+```json
+{ "orderId": "A-1042",
+  "dates":   [{ "field": "shippedOn", "value": "2026-11-21" }],
+  "amounts": [], "status": "Shipped", "timePromises": [] }
+```
+
+`shippedOn = 2026-11-21` vs ticket `2026-11-12` → mismatch → human. The model never approves; it
+only turns free text into data the code can check. Because the extractor can miss things too,
+the rules stay as a second reader: if either finds an unverifiable claim, or they disagree, the
+draft goes to a human.
+
 ## Limitations
 
-- **Value check, not meaning check.** The fact checker confirms that a stated date exists in the
+- **Value check, not meaning check** (see the section above). The fact checker confirms that a stated date exists in the
   record, not that it is attached to the right field ("shipped on" vs "arrives on").
 - **Conservative extraction.** "Your order has not been delivered yet" mentions a status that
   contradicts the record and escalates. That is a false positive by design.
@@ -213,13 +268,13 @@ Tests never touch it, and the policy has no dependency on it.
 
 ```
 src/HitlSendReply/
-  Domain/       tickets, permissions, idempotency key (no framework types)
-  Policy/       FactChecker, PublishPolicy, decisions
-  Judge/        IReplyJudge, LlmReplyJudge (IChatClient), scripted/failing/hanging judges
-  Publishing/   fake outbox, approval ledger, audit log
+  Domain/       tickets, permissions, idempotency key, ITicketStore (no framework types)
+  Policy/       FactChecker, PublishPolicy, decisions, ports (IOutbox, IAuditLog, IReplyJudge)
+  Judge/        adapters for IReplyJudge: LlmReplyJudge (IChatClient), scripted/failing/hanging
+  Publishing/   in-memory adapters: fake outbox, approval ledger, audit log
   Agent/        MAF wiring: tools, gate (auto-approval rule), runner, scripted chat client
   Evaluation/   judge measurement over data/drafts.jsonl
   Cli/          colored console UI (presentation only) and LLM settings
-tests/HitlSendReply.Tests/   71 tests (scenario and dataset tests run in EN and ES)
+tests/HitlSendReply.Tests/   76 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
 evidence/                    test and console runs
 ```

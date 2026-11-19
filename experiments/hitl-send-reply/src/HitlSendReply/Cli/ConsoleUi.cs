@@ -1,6 +1,7 @@
 using HitlSendReply.Agent;
 using HitlSendReply.Publishing;
 using Spectre.Console;
+using HitlSendReply.Policy;
 
 namespace HitlSendReply.Cli;
 
@@ -61,7 +62,7 @@ public static class ConsoleUi
         AnsiConsole.WriteLine();
     }
 
-    public static void Trace(AuditLog audit)
+    public static void Trace(IAuditLog audit)
     {
         var table = new Table().Border(TableBorder.Rounded).BorderColor(Color.Grey23).Expand()
             .Title("[grey]pipeline · audit log[/]")
@@ -86,7 +87,7 @@ public static class ConsoleUi
         AnsiConsole.Write(table);
     }
 
-    public static void Result(FakeOutbox outbox, int sentBefore)
+    public static void Result(IOutbox outbox, int sentBefore)
     {
         var sent = outbox.Sent.Skip(sentBefore).ToList();
         if (sent.Count == 0)

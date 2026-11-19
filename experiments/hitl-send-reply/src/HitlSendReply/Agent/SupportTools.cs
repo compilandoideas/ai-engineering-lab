@@ -3,6 +3,7 @@ using System.Globalization;
 using HitlSendReply.Domain;
 using HitlSendReply.Publishing;
 using Microsoft.Extensions.AI;
+using HitlSendReply.Policy;
 
 namespace HitlSendReply.Agent;
 
@@ -10,7 +11,7 @@ namespace HitlSendReply.Agent;
 /// Tools exposed to the support agent. send_reply takes only ticket id and text: the recipient
 /// and channel are resolved from the ticket, so the model cannot redirect a reply.
 /// </summary>
-public sealed class SupportTools(ITicketStore tickets, FakeOutbox outbox, ApprovalLedger ledger, AuditLog audit)
+public sealed class SupportTools(ITicketStore tickets, IOutbox outbox, ApprovalLedger ledger, IAuditLog audit)
 {
     [Description("Read the order facts of a ticket. Use them verbatim; do not invent facts.")]
     public string GetTicket([Description("Ticket id, for example T-1001")] string ticketId)

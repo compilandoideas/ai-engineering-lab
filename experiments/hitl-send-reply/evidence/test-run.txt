@@ -1,4 +1,17 @@
-# dotnet test — 2026-11-19T02:46Z — SDK 10.0.115 — Microsoft.Agents.AI 1.28.0 — Linux x86_64
+# dotnet test — 2026-11-19T03:05Z — SDK 10.0.115 — Microsoft.Agents.AI 1.28.0 — Linux x86_64
+  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "Your order shipped on 2026-11-12.")
+  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "Thanks for your message, we have added it to your "···)
+  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "The total of your order was $129.90.")
+  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "Order #A-1042 was dispatched on Nov 12th and shoul"···)
+  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "According to our system, your order #A-1042 shippe"···)
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "It will arrive within two days.", expectedIssue: "cannot be verified")
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order has been delivered.", expectedIssue: "contradicts the record")
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order #A-9999 shipped on November 12.", expectedIssue: "does not match the ticket's order")
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order shipped on February 30.", expectedIssue: "not a valid date")
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "It will arrive tomorrow.", expectedIssue: "cannot be verified")
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "We will refund $500.", expectedIssue: "has no source")
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "It will arrive in 3 days.", expectedIssue: "Unverifiable number")
+  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order #A-1042 shipped on November 14.", expectedIssue: "does not match any date")
   Passed HitlSendReply.Tests.FactCheckerSpanishTests.Escala_lo_que_no_puede_verificar(text: "Le reembolsaremos $500.", expectedIssue: "has no source")
   Passed HitlSendReply.Tests.FactCheckerSpanishTests.Escala_lo_que_no_puede_verificar(text: "Se despachó el 31 de febrero.", expectedIssue: "not a valid date")
   Passed HitlSendReply.Tests.FactCheckerSpanishTests.Escala_lo_que_no_puede_verificar(text: "Su pedido llegará mañana.", expectedIssue: "cannot be verified")
@@ -20,45 +33,37 @@
   Passed HitlSendReply.Tests.FactCheckerSpanishTests.Verifica_cuando_cada_dato_coincide(text: "Gracias por su mensaje, quedó registrado en su tic"···)
   Passed HitlSendReply.Tests.FactCheckerSpanishTests.Verifica_cuando_cada_dato_coincide(text: "Según nuestro sistema, su pedido #A-1042 se despac"···)
   Passed HitlSendReply.Tests.FactCheckerSpanishTests.Verifica_cuando_cada_dato_coincide(text: "Se despachó el 12/11.")
-  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "Your order shipped on 2026-11-12.")
-  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "Thanks for your message, we have added it to your "···)
-  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "The total of your order was $129.90.")
-  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "Order #A-1042 was dispatched on Nov 12th and shoul"···)
-  Passed HitlSendReply.Tests.FactCheckerTests.Verified_when_every_claim_matches_the_record(text: "According to our system, your order #A-1042 shippe"···)
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "It will arrive within two days.", expectedIssue: "cannot be verified")
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order has been delivered.", expectedIssue: "contradicts the record")
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order #A-9999 shipped on November 12.", expectedIssue: "does not match the ticket's order")
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order shipped on February 30.", expectedIssue: "not a valid date")
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "It will arrive tomorrow.", expectedIssue: "cannot be verified")
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "We will refund $500.", expectedIssue: "has no source")
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "It will arrive in 3 days.", expectedIssue: "Unverifiable number")
-  Passed HitlSendReply.Tests.FactCheckerTests.Escalates_claims_it_cannot_verify(text: "Your order #A-1042 shipped on November 14.", expectedIssue: "does not match any date")
+  Passed HitlSendReply.Tests.ArchitectureTests.The_rule_detects_a_violation
+  Passed HitlSendReply.Tests.ArchitectureTests.Core_does_not_depend_on_agent_framework_llm_or_ui(namespace: "HitlSendReply.Domain")
+  Passed HitlSendReply.Tests.ArchitectureTests.Core_does_not_depend_on_agent_framework_llm_or_ui(namespace: "HitlSendReply.Policy")
+  Passed HitlSendReply.Tests.ArchitectureTests.Core_does_not_depend_on_adapters(namespace: "HitlSendReply.Domain")
+  Passed HitlSendReply.Tests.ArchitectureTests.Core_does_not_depend_on_adapters(namespace: "HitlSendReply.Policy")
   Passed HitlSendReply.Tests.PublishPolicyTests.No_judge_output_produces_auto_send_when_a_verifiable_check_fails
   Passed HitlSendReply.Tests.PublishPolicyTests.Judge_escalation_goes_to_a_human
   Passed HitlSendReply.Tests.PublishPolicyTests.Verified_facts_and_clear_judge_auto_send
   Passed HitlSendReply.Tests.EvaluatorTests.Dataset_has_thirty_labeled_drafts_with_the_same_label_mix(lang: "es")
   Passed HitlSendReply.Tests.EvaluatorTests.Dataset_has_thirty_labeled_drafts_with_the_same_label_mix(lang: "en")
+  Passed HitlSendReply.Tests.ScenarioTests.S2_refund_promise_waits_for_a_human_and_nothing_is_sent_if_rejected(lang: "es")
   Passed HitlSendReply.Tests.EvaluatorTests.With_a_judge_that_always_escalates_nothing_is_auto_sent(lang: "es")
   Passed HitlSendReply.Tests.EvaluatorTests.With_a_judge_that_always_escalates_nothing_is_auto_sent(lang: "en")
+  Passed HitlSendReply.Tests.ScenarioTests.S2_refund_promise_waits_for_a_human_and_nothing_is_sent_if_rejected(lang: "en")
   Passed HitlSendReply.Tests.EvaluatorTests.With_a_judge_that_never_escalates_only_judge_dependent_drafts_leak(lang: "en")
   Passed HitlSendReply.Tests.EvaluatorTests.With_a_judge_that_never_escalates_only_judge_dependent_drafts_leak(lang: "es")
-  Passed HitlSendReply.Tests.PublishPolicyTests.Judge_timeout_goes_to_a_human
-  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_without_a_human(ticketId: "T-1004", stage: Permissions)
-  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_without_a_human(ticketId: "T-1005", stage: Ticket)
-  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_without_a_human(ticketId: "T-9999", stage: Ticket)
-  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_a_duplicate_of_an_already_sent_text
-  Passed HitlSendReply.Tests.PublishPolicyTests.Judge_error_goes_to_a_human
-  Passed HitlSendReply.Tests.PublishPolicyTests.A_clear_judge_cannot_override_unverified_facts
-  Passed HitlSendReply.Tests.ScenarioTests.S2_refund_promise_waits_for_a_human_and_nothing_is_sent_if_rejected(lang: "es")
-  Passed HitlSendReply.Tests.ScenarioTests.S2_refund_promise_waits_for_a_human_and_nothing_is_sent_if_rejected(lang: "en")
   Passed HitlSendReply.Tests.ScenarioTests.S5_a_tampered_approval_cannot_change_the_text_that_is_sent(lang: "en")
   Passed HitlSendReply.Tests.ScenarioTests.S5_a_tampered_approval_cannot_change_the_text_that_is_sent(lang: "es")
   Passed HitlSendReply.Tests.ScenarioTests.S5_the_send_tool_refuses_text_nobody_authorized(lang: "en")
   Passed HitlSendReply.Tests.ScenarioTests.S5_the_send_tool_refuses_text_nobody_authorized(lang: "es")
   Passed HitlSendReply.Tests.ScenarioTests.S7_judge_down_goes_to_a_human(lang: "en")
+  Passed HitlSendReply.Tests.PublishPolicyTests.Judge_timeout_goes_to_a_human
   Passed HitlSendReply.Tests.ScenarioTests.S7_judge_down_goes_to_a_human(lang: "es")
+  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_without_a_human(ticketId: "T-1004", stage: Permissions)
+  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_without_a_human(ticketId: "T-1005", stage: Ticket)
+  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_without_a_human(ticketId: "T-9999", stage: Ticket)
   Passed HitlSendReply.Tests.ScenarioTests.S1_verified_fact_is_sent_without_a_human(lang: "es")
+  Passed HitlSendReply.Tests.PublishPolicyTests.Blocks_a_duplicate_of_an_already_sent_text
   Passed HitlSendReply.Tests.ScenarioTests.S1_verified_fact_is_sent_without_a_human(lang: "en")
+  Passed HitlSendReply.Tests.PublishPolicyTests.Judge_error_goes_to_a_human
+  Passed HitlSendReply.Tests.PublishPolicyTests.A_clear_judge_cannot_override_unverified_facts
   Passed HitlSendReply.Tests.ScenarioTests.S5_with_chat_client_binding_disabled_the_tool_approval_middleware_still_binds(lang: "en")
   Passed HitlSendReply.Tests.ScenarioTests.S5_with_chat_client_binding_disabled_the_tool_approval_middleware_still_binds(lang: "es")
   Passed HitlSendReply.Tests.ScenarioTests.S2_refund_promise_is_sent_once_a_human_approves(lang: "es")
@@ -70,4 +75,4 @@
   Passed HitlSendReply.Tests.ScenarioTests.S3_ambiguous_reply_goes_to_a_human(lang: "es")
   Passed HitlSendReply.Tests.ScenarioTests.S3_ambiguous_reply_goes_to_a_human(lang: "en")
   Passed HitlSendReply.Tests.ScenarioTests.Rejected_draft_is_rewritten_and_the_new_call_goes_through_the_whole_policy_again
-Passed!  - Failed:     0, Passed:    71, Skipped:     0, Total:    71 - HitlSendReply.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    76, Skipped:     0, Total:    76 - HitlSendReply.Tests.dll (net10.0)

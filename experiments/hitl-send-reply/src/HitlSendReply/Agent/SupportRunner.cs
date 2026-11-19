@@ -17,7 +17,7 @@ public sealed class SupportRunner(
     ReplyGate gate,
     IHumanApprover human,
     ApprovalLedger ledger,
-    AuditLog audit,
+    IAuditLog audit,
     ITicketStore tickets,
     int maxApprovalRounds = 4)
 {
