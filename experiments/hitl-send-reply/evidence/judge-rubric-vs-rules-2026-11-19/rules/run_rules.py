@@ -1,7 +1,7 @@
 import json, sys, time
 sys.path.insert(0, ".")
 from lexicon import flags
-base = "../../../src/HitlSendReply/data"
+base = "../../../src/HitlSendReply.Lab/data"
 # Only the 90 drafts per language that reach the judge (same set as the LLM study).
 reach = {}
 for lang in ("es","en"):

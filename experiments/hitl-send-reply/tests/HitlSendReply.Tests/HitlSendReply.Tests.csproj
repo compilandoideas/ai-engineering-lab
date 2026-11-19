@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\HitlSendReply\HitlSendReply.csproj" />
+    <ProjectReference Include="..\..\src\HitlSendReply.Lab\HitlSendReply.Lab.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

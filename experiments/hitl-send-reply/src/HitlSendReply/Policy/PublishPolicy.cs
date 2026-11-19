@@ -1,4 +1,5 @@
-using HitlSendReply.Domain;
+using HitlSendReply.Judge;
+using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Policy;
 
@@ -23,33 +24,49 @@ public sealed class PublishPolicy(
         {
             var ticket = tickets.Find(request.TicketId);
             if (ticket is null)
+            {
                 return PolicyDecision.Block(PolicyStage.Ticket, $"Ticket '{request.TicketId}' does not exist.");
+            }
 
             if (ticket.IsClosed)
+            {
                 return PolicyDecision.Block(PolicyStage.Ticket, $"Ticket {ticket.Id} is closed.");
+            }
 
             if (!permissions.CanReply(options.AgentName, ticket.Channel))
+            {
                 return PolicyDecision.Block(PolicyStage.Permissions,
                     $"Agent '{options.AgentName}' is not allowed to reply on {ticket.Channel}.");
+            }
 
             if (outbox.HasSent(request.Key))
+            {
                 return PolicyDecision.Block(PolicyStage.Duplicate, "This exact text was already sent on this ticket.");
+            }
 
             if (reviews?.WasRejected(request.Key) == true)
+            {
                 return PolicyDecision.Block(PolicyStage.PriorRejection, "A reviewer already rejected this exact text.");
+            }
 
             // Observed with a real model: after a rejection the agent sometimes rewrote toward the
             // reason and the rewrite auto-sent, so no human saw the final text. Not any more.
             if (reviews?.HasRejection(ticket.Id) == true)
+            {
                 return PolicyDecision.Human(PolicyStage.PriorRejection,
                     "A reviewer rejected an earlier draft on this ticket; the rewrite needs a human too.");
+            }
 
             if (string.IsNullOrWhiteSpace(request.Text))
+            {
                 return PolicyDecision.Block(PolicyStage.Facts, "Empty reply.");
+            }
 
             var facts = FactChecker.Check(request.Text, ticket.Order, ticket.Language);
             if (!facts.Verified)
+            {
                 return PolicyDecision.Human(PolicyStage.Facts, string.Join(" ", facts.Issues));
+            }
 
             var signal = await EvaluateWithTimeoutAsync(request.Text, ticket, cancellationToken);
             return signal.Escalate

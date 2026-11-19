@@ -1,14 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
+  <!-- The system: what would ship. Knows nothing about the console, scenarios or fakes. -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Agents.AI" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
-    <PackageReference Include="Spectre.Console" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="data\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="HitlSendReply.Tests" />

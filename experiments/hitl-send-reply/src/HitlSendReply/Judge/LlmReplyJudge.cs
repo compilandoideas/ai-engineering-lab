@@ -1,8 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
-using HitlSendReply.Domain;
+using HitlSendReply.Tickets;
 using Microsoft.Extensions.AI;
-using HitlSendReply.Policy;
 
 namespace HitlSendReply.Judge;
 
@@ -55,10 +54,14 @@ public sealed class LlmReplyJudge(IChatClient chatClient) : IReplyJudge
             messages, new ChatOptions { Temperature = 0 }, cancellationToken: cancellationToken);
 
         if (!response.TryGetResult(out var verdict) || verdict is null)
+        {
             return JudgeSignal.EscalateFor(JudgeCategory.Other, "Judge returned no parseable verdict.");
+        }
 
         if (!verdict.Escalate)
+        {
             return JudgeSignal.Clear(verdict.Rationale ?? "");
+        }
 
         return JudgeSignal.EscalateFor(
             Enum.TryParse<JudgeCategory>(verdict.Category, ignoreCase: true, out var category) ? category : JudgeCategory.Other,

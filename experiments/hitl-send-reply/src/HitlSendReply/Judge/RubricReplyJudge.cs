@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Globalization;
-using HitlSendReply.Domain;
-using HitlSendReply.Policy;
+using HitlSendReply.Tickets;
 using Microsoft.Extensions.AI;
 
 namespace HitlSendReply.Judge;
@@ -62,7 +61,9 @@ public sealed class RubricReplyJudge(IChatClient chatClient) : IReplyJudge
             messages, new ChatOptions { Temperature = 0 }, cancellationToken: cancellationToken);
 
         if (!response.TryGetResult(out var rubric) || rubric is null)
+        {
             return JudgeSignal.EscalateFor(JudgeCategory.Other, "Judge returned no parseable rubric.");
+        }
 
         return Decide(rubric, draft);
     }
@@ -72,7 +73,9 @@ public sealed class RubricReplyJudge(IChatClient chatClient) : IReplyJudge
     {
         var hits = rubric.Matches().ToList();
         if (hits.Count == 0)
+        {
             return JudgeSignal.Clear("Rubric: no category applies.");
+        }
 
         var rationale = string.Join("; ", hits.Select(h =>
         {

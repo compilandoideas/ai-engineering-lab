@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using HitlSendReply.Domain;
+using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Policy;
 
@@ -30,7 +30,9 @@ public static class FactChecker
         masked = Consume(masked, ClaimPatterns.OrderRef, m =>
         {
             if (!string.Equals(m.Groups["id"].Value, order.Id, StringComparison.OrdinalIgnoreCase))
+            {
                 issues.Add($"Order reference '{m.Value}' does not match the ticket's order #{order.Id}.");
+            }
         });
 
         masked = Consume(masked, ClaimPatterns.IsoDate, m =>
@@ -46,7 +48,9 @@ public static class FactChecker
         {
             var amount = ClaimPatterns.ParseAmount(m.Groups["amount"].Value, language);
             if (amount != order.Total)
+            {
                 issues.Add($"Amount '{m.Value.Trim()}' has no source in the order record (total is {order.Total:0.00} {order.Currency}).");
+            }
         });
 
         masked = Consume(masked, rules.RelativeTime, m =>
@@ -59,13 +63,17 @@ public static class FactChecker
             {
                 var negated = rules.NegationBefore.IsMatch(current[..m.Index]);
                 if (!StatusClaimHolds(status, negated, order.Status))
+                {
                     issues.Add($"Status claim '{(negated ? "not " : "")}{m.Value.Trim()}' contradicts the record (order is {order.Status}).");
+                }
             });
         }
 
         // Anything numeric left over is a claim we could not parse: escalate rather than guess.
         foreach (Match m in ClaimPatterns.LeftoverNumber.Matches(masked))
+        {
             issues.Add($"Unverifiable number '{m.Value}'.");
+        }
 
         return new FactCheckResult(issues);
     }
@@ -83,10 +91,14 @@ public static class FactChecker
     internal static bool StatusClaimHolds(OrderStatus claimed, bool negated, OrderStatus actual)
     {
         if (claimed == OrderStatus.Cancelled || actual == OrderStatus.Cancelled)
+        {
             return negated ? actual != claimed : actual == claimed;
+        }
 
         if (claimed == OrderStatus.Processing)
+        {
             return negated ? actual != OrderStatus.Processing : actual == OrderStatus.Processing;
+        }
 
         return negated ? Progress(actual) < Progress(claimed) : Progress(actual) >= Progress(claimed);
     }
@@ -94,15 +106,22 @@ public static class FactChecker
     private static void CheckDate(DateOnly? date, string raw, Order order, List<string> issues)
     {
         if (date is null)
+        {
             issues.Add($"'{raw.Trim()}' is not a valid date.");
+        }
         else if (date != order.ShippedOn && date != order.EstimatedDelivery)
+        {
             issues.Add($"Date '{raw.Trim()}' does not match any date in the order record.");
+        }
     }
 
     private static string Consume(string text, Regex regex, Action<Match> onMatch)
     {
         foreach (Match m in regex.Matches(text))
+        {
             onMatch(m);
+        }
+
         return regex.Replace(text, " ");
     }
 }
@@ -171,13 +190,21 @@ internal sealed class ClaimPatterns
     {
         int month;
         if (m.Groups["monthnum"].Success)
+        {
             month = int.Parse(m.Groups["monthnum"].Value, CultureInfo.InvariantCulture);
+        }
         else
         {
             var name = m.Groups["month"].Value.ToLowerInvariant();
-            if (name == "setiembre") name = "septiembre";
+            if (name == "setiembre")
+            {
+                name = "septiembre";
+            }
+
             if (!rules.Months.TryGetValue(name, out month) && !rules.Months.TryGetValue(name[..Math.Min(3, name.Length)], out month))
+            {
                 return null;
+            }
         }
 
         var day = int.Parse(m.Groups["day"].Value, CultureInfo.InvariantCulture);
@@ -206,7 +233,10 @@ internal sealed class ClaimPatterns
         for (var i = 0; i < list.Length; i++)
         {
             map[list[i]] = i + 1;
-            if (prefix > 0) map[list[i][..prefix]] = i + 1;
+            if (prefix > 0)
+            {
+                map[list[i][..prefix]] = i + 1;
+            }
         }
         return map;
     }

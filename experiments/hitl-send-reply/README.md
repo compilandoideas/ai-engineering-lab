@@ -6,7 +6,7 @@ An agent drafts support replies and proposes `send_reply`. Code, not the model, 
 send, ask a human, or block. An LLM judge can only add reasons to stop, never approve.
 
 ```bash
-dotnet run --project src/HitlSendReply -- scenario all     # no API key needed (scripted model)
+dotnet run --project src/HitlSendReply.Lab -- scenario all     # no API key needed (scripted model)
 ```
 
 With a real model, set `OPENAI_API_KEY` and use `live` (see [Run it](#run-it)).
@@ -14,6 +14,14 @@ With a real model, set `OPENAI_API_KEY` and use `live` (see [Run it](#run-it)).
 **Key result** (blind set, gpt-4.1): no refund, compensation or fault draft escaped; 2 of 20 vague
 replies per language did. Counts on 40 drafts per language, labels still under human review.
 More: [Design decisions](#design-decisions) · [Measuring the judge](#measuring-the-judge).
+
+**Where to start reading**
+
+1. `src/HitlSendReply.Lab/Program.cs`: the three commands, and `Pipeline.cs`, which wires the system.
+2. `src/HitlSendReply/SendReply/SupportAgent.cs`: the agent, its tools, and the policy as the only auto-approval rule.
+3. `SendReply/ReplyGate.cs`: where each `send_reply` call meets the policy; `SupportRunner.cs` asks the human.
+4. `src/HitlSendReply/Policy/PublishPolicy.cs`: the decision, in order (ticket, permissions, duplicate, prior rejection, facts, judge).
+5. `src/HitlSendReply/Judge/LlmReplyJudge.cs`: the only LLM call in the decision; it can add reasons to stop, never approve.
 
 A support agent drafts replies and calls one tool, `send_reply(ticketId, text)`. The same tool can
 send a harmless status update or a refund promise the company never approved. This experiment
@@ -24,7 +32,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
 tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (104/104 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (106/106 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -121,8 +129,9 @@ Each one: the decision, the alternative discarded, why, and what backs it.
 9. **MAF is an adapter; the policy is plain code.**
    Discarded: putting the rules inside framework callbacks. The policy must survive a framework
    change and a port to Python.
-   Evidence: `ArchitectureTests` (fails if `Domain/` or `Policy/` reference MAF,
-   `Microsoft.Extensions.AI`, OpenAI or the UI; verified by introducing a violation).
+   Evidence: `LayeringTests` (fails if `Tickets/` or `Policy/` reference MAF,
+   `Microsoft.Extensions.AI`, OpenAI or the UI, or if the system references the lab; verified by
+   introducing a violation).
 
 ## How it maps to Microsoft Agent Framework
 
@@ -131,32 +140,35 @@ All APIs below were compiled and exercised against `Microsoft.Agents.AI` 1.28.0 
 
 | Piece | API | File |
 |---|---|---|
-| Tool that always pauses | `new ApprovalRequiredAIFunction(AIFunctionFactory.Create(SendReply, name: "send_reply"))` | `Agent/SupportTools.cs` |
-| Agent | `ChatClientAgent` + `ChatClientAgentOptions { ChatOptions { Instructions, Tools, AllowMultipleToolCalls = false } }` | `Agent/SupportAgentFactory.cs` |
-| Policy as the only auto-approval rule | `AsBuilder().UseToolApproval(new ToolApprovalAgentOptions { AutoApprovalRules = [gate.AutoApproveAsync], MaxAutoApprovalIterations = 2 })` | `Agent/SupportAgentFactory.cs`, `Agent/ReplyGate.cs` |
-| Block / human decision | `ToolApprovalRequestContent.CreateResponse(approved, reason)`, resumed with `RunAsync(..., session)` | `Agent/SupportRunner.cs` |
+| Tool that always pauses | `new ApprovalRequiredAIFunction(AIFunctionFactory.Create(SendReply, name: "send_reply"))` | `SendReply/SupportTools.cs` |
+| Agent | `ChatClientAgent` + `ChatClientAgentOptions { ChatOptions { Instructions, Tools, AllowMultipleToolCalls = false } }` | `SendReply/SupportAgent.cs` |
+| Policy as the only auto-approval rule | `AsBuilder().UseToolApproval(new ToolApprovalAgentOptions { AutoApprovalRules = [gate.AutoApproveAsync], MaxAutoApprovalIterations = 2 })` | `SendReply/SupportAgent.cs`, `SendReply/ReplyGate.cs` |
+| Block / human decision | `ToolApprovalRequestContent.CreateResponse(approved, reason)`, resumed with `RunAsync(..., session)` | `SendReply/SupportRunner.cs` |
 
 ## Policy is framework-agnostic; MAF is an adapter
 
-One project, folders as boundaries. The rule is the dependency direction, not the number of projects:
+Two projects, so what would ship and what only exists to demo and measure it never mix. Inside the
+system, folders are organized by what each part does, not by technical layer:
 
 ```
-Cli/ (console UI) ──┐
-Agent/ (MAF)  ──────┼──►  Policy/  ──►  Domain/
-Judge/ (LLM)  ──────┤       ports: ITicketStore, IOutbox, IAuditLog, IReplyJudge
-Publishing/ (fakes) ┘
+src/HitlSendReply.Lab  (console, scenarios, evaluation, fakes)
+        │ references
+        ▼
+src/HitlSendReply      SendReply/ (MAF) ──► Policy/ ──► Tickets/
+                       Judge/ (LLM)     ◄──── Policy/ asks IReplyJudge
 ```
 
-- `Domain/` and `Policy/` decide everything that matters (block, human, auto-send) and reference
+- `Tickets/` and `Policy/` decide everything that matters (block, human, auto-send) and reference
   neither Microsoft Agent Framework, `Microsoft.Extensions.AI`, the OpenAI SDK nor the UI.
-- `Agent/` adapts that policy to MAF: the auto-approval rule calls `ReplyGate`, the runner turns
+- `SendReply/` adapts that policy to MAF: the auto-approval rule calls `ReplyGate`, the runner turns
   decisions into `CreateResponse(...)`. Swap the framework and only this folder changes.
-- `Judge/LlmReplyJudge` is the only place that talks to a model for judgment.
-- `ArchitectureTests` (NetArchTest) fails the build's tests if `Domain/` or `Policy/` take a
-  dependency on a framework or on an adapter folder. A guard test checks the rule is not vacuous,
-  and it was verified by adding a temporary `Microsoft.Extensions.AI` reference to `Policy/` (the test failed).
+- `Judge/` holds `IReplyJudge` and the two judges that talk to a model.
+- `LayeringTests` (NetArchTest) fails if `Tickets/` or `Policy/` take a dependency on a framework
+  or on `SendReply/`, or if the system references the lab. A guard test checks the rule is not
+  vacuous, and it was verified by adding a temporary `Microsoft.Extensions.AI` type to `Policy/`
+  (the test failed).
 
-This is also what makes the Python port mechanical: `Domain/` + `Policy/` translate one to one;
+This is also what makes the Python port mechanical: `Tickets/` + `Policy/` translate one to one;
 only the adapters change.
 
 ```csharp
@@ -236,7 +248,7 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (104 passed),
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (106 passed),
 [`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
 (console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
 (rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
@@ -252,8 +264,8 @@ brew install --cask dotnet-sdk        # or the installer from https://dotnet.mic
 dotnet --version                      # 10.x
 git clone <this repo> && cd ai-engineering-lab/experiments/hitl-send-reply
 dotnet test
-dotnet run --project src/HitlSendReply -- scenario 2              # you are the reviewer: y / n + reason
-dotnet run --project src/HitlSendReply -- scenario all --lang es   # Spanish dataset
+dotnet run --project src/HitlSendReply.Lab -- scenario 2              # you are the reviewer: y / n + reason
+dotnet run --project src/HitlSendReply.Lab -- scenario all --lang es   # Spanish dataset
 ```
 
 **Linux (Ubuntu 24.04)**: `sudo apt-get install -y dotnet-sdk-10.0`, then the same commands.
@@ -276,17 +288,17 @@ export LAB_LLM_API_KEY=ollama
 export LAB_LLM_MODEL=llama3.1:8b
 
 # real agent + real judge, you review in the terminal; audit goes to ./audit.jsonl
-dotnet run --project src/HitlSendReply -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
+dotnet run --project src/HitlSendReply.Lab -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
 
 # measure the judge on 100 hand-labeled drafts per language, 3 runs; writes results/<timestamp>-<lang>-<model>.json
-dotnet run --project src/HitlSendReply -- evaluate --lang en --runs 3
-dotnet run --project src/HitlSendReply -- evaluate --lang es --runs 3
+dotnet run --project src/HitlSendReply.Lab -- evaluate --lang en --runs 3
+dotnet run --project src/HitlSendReply.Lab -- evaluate --lang es --runs 3
 ```
 
 ## Measuring the judge
 
-Two datasets with the same structure: [`drafts.en.jsonl`](src/HitlSendReply/data/drafts.en.jsonl)
-and [`drafts.es.jsonl`](src/HitlSendReply/data/drafts.es.jsonl). Each has 100 fictional drafts
+Two datasets with the same structure: [`drafts.en.jsonl`](src/HitlSendReply.Lab/data/drafts.en.jsonl)
+and [`drafts.es.jsonl`](src/HitlSendReply.Lab/data/drafts.es.jsonl). Each has 100 fictional drafts
 labeled by hand (30 auto-send, 67 human, 3 block); D01–D30 / E01–E30 are the original set and
 D31–D100 / E31–E100 were added later. Some items carry `"doubtful": true` where the label itself is
 debatable (ignored by the loader). The Spanish set is written in Spanish, not
@@ -455,7 +467,7 @@ list problem.
 
 ## Console
 
-The UI lives in `Cli/ConsoleUi.cs` and only renders what the pipeline did: the scenario, the
+The UI lives in `src/HitlSendReply.Lab/Ui/` and only renders what the pipeline did: the scenario, the
 review panel (exact text, recipient from the ticket, channel), the audit trail and the result.
 Tests never touch it, and the policy has no dependency on it.
 
@@ -464,14 +476,21 @@ Tests never touch it, and the policy has no dependency on it.
 ## Layout
 
 ```
-src/HitlSendReply/
-  Domain/       tickets, permissions, idempotency key, ITicketStore (no framework types)
-  Policy/       FactChecker, PublishPolicy, decisions, ports (IOutbox, IAuditLog, IReplyJudge)
-  Judge/        adapters for IReplyJudge: LlmReplyJudge (IChatClient), scripted/failing/hanging
-  Publishing/   in-memory adapters: fake outbox, approval ledger, audit log
-  Agent/        MAF wiring: tools, gate (auto-approval rule), runner, scripted chat client
-  Evaluation/   judge measurement over data/drafts.jsonl
-  Cli/          colored console UI (presentation only) and LLM settings
-tests/HitlSendReply.Tests/   104 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
+src/HitlSendReply/                the system: what would ship
+  Tickets/      ticket, order, idempotency key, permissions, ITicketStore (no framework types)
+  SendReply/    the use case on MAF: agent, send_reply tool, gate, runner, approval ledger, human review
+  Policy/       PublishPolicy, FactChecker, decisions, and the ports it needs (IOutbox, IReviewHistory)
+  Judge/        IReplyJudge, LlmReplyJudge, RubricReplyJudge
+src/HitlSendReply.Lab/            the lab around it: never referenced by the system
+  Program.cs    scenario | live | evaluate
+  Pipeline.cs   wires one instance of the system with fakes
+  Scenarios/    the seven designed cases and their command
+  Live/         real model on one ticket
+  Evaluate/     judge measurement over data/drafts.<lang>.jsonl
+  Ui/           colored console (presentation only), console reviewer
+  Fakes/        in-memory outbox, audit log, review history, tickets, scripted model/judge/reviewer
+  data/         labeled drafts
+tests/HitlSendReply.Tests/        106 tests, one folder per area (scenario and dataset tests run in EN and ES)
+heldout/                          blind set, never used to tune
 evidence/                    test and console runs
 ```

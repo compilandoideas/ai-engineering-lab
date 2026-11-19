@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/HitlSendReply/HitlSendReply.csproj" />
+    <Project Path="src/HitlSendReply.Lab/HitlSendReply.Lab.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/HitlSendReply.Tests/HitlSendReply.Tests.csproj" />
