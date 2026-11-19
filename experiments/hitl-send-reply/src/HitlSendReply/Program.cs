@@ -81,10 +81,10 @@ static async Task<int> RunLiveAsync(string ticketId, string message, Language la
     using var agentModel = settings.CreateChatClient(settings.AgentModel);
     using var judgeModel = settings.CreateChatClient(settings.JudgeModel);
     var auditPath = Path.Combine(Directory.GetCurrentDirectory(), "audit.jsonl");
-    var lab = Lab.Create(agentModel, new LlmReplyJudge(judgeModel), new ConsoleApprover(Console.In, Environment.UserName), language, auditPath: auditPath);
+    var lab = Lab.Create(agentModel, settings.CreateJudge(judgeModel), new ConsoleApprover(Console.In, Environment.UserName), language, auditPath: auditPath);
 
     ConsoleUi.Banner(ConsoleUi.T.LiveModel);
-    ConsoleUi.LiveHeader($"agent {settings.AgentModel} · judge {settings.JudgeModel}", ticketId, message);
+    ConsoleUi.LiveHeader($"agent {settings.AgentModel} · judge {settings.JudgeModel} ({settings.JudgeKind})", ticketId, message);
     var result = await lab.Runner.RunAsync(ticketId, message);
     ConsoleUi.Trace(lab.Audit);
     ConsoleUi.Result(lab.Outbox, 0);
@@ -101,7 +101,7 @@ static async Task<int> EvaluateAsync(int runs, Language language)
     }
 
     using var judgeModel = settings.CreateChatClient(settings.JudgeModel);
-    var judge = new LlmReplyJudge(judgeModel);
+    var judge = settings.CreateJudge(judgeModel);
     var drafts = Evaluator.Load(Evaluator.DatasetPath(language));
     var reports = new List<RunReport>();
 

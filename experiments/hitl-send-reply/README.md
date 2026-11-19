@@ -9,7 +9,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
 tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (98/98 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (104/104 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -221,7 +221,7 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (98 passed),
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (104 passed),
 [`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
 (console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
 (rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
@@ -252,6 +252,7 @@ Any OpenAI-compatible endpoint works: OpenAI, Azure OpenAI (v1 endpoint) or Olla
 # OpenAI. Agent defaults to gpt-4.1-mini, judge to gpt-4.1
 export OPENAI_API_KEY=sk-...
 # export LAB_AGENT_MODEL=gpt-4.1-mini LAB_JUDGE_MODEL=gpt-4.1   # optional overrides
+# export LAB_JUDGE=rubric   # optional: rubric judge instead of the simple one (see Detection layers)
 
 # or Ollama on your Mac
 ollama pull llama3.1:8b
@@ -300,7 +301,12 @@ stage go to the judge, 5 runs each, temperature 0
 | gpt-4.1 · EN | 89/90 | 2 | 10/300 | 3/150 |
 
 These numbers were measured with the judge prompt *before* it named vague timing and safety
-advice explicitly (decision 7). The wording changed after the study; it has not been re-measured yet.
+advice explicitly (decision 7). Re-measured after the change
+([rubric vs rules study](evidence/judge-rubric-vs-rules-2026-11-19/README.md)): gpt-4.1 escapes
+0 in EN and 1 doubtful draft in ES. Two caveats. The new wording quotes phrases that also appear
+in the dataset, so the judge is partly tuned on its own test set and these numbers are optimistic.
+And with gpt-4.1-mini in ES, draft E20 (claiming personal data was deleted) now escapes 5 of 5
+runs, where it escaped 1 to 2 of 5 before: a prompt change that fixes one class can open another.
 
 What it says, and what it does not:
 
@@ -354,8 +360,9 @@ draft goes to a human.
 ## Detection layers you can add
 
 The judge is a port (`IReplyJudge`), so more detection layers chain behind it without touching
-the policy. Today the lab runs deterministic checks plus one LLM judge. The layering below is the
-design for adding more; the extra layers are **not implemented**.
+the policy. Today the lab runs deterministic checks plus one LLM judge, simple or rubric
+(`LAB_JUDGE=rubric`). A lexicon screen and the composition of several layers are **not
+implemented** in the app; the lexicon was measured offline as a script.
 
 ```
 draft ──► rules / lexicon ──► LLM judge (or rubric) ──► auto-send
@@ -366,9 +373,9 @@ draft ──► rules / lexicon ──► LLM judge (or rubric) ──► auto-s
 | Layer | Catches | Misses | Cost |
 |---|---|---|---|
 | Deterministic checks (implemented) | permissions, duplicates, prior rejection, wrong order id / date / amount / status | meaning: right value attached to the wrong field | free, deterministic |
-| Lexicon screen (not implemented) | known risky wording: "refund", "our fault", "guarantee", "we're on it", "reembolso", "culpa nuestra" | paraphrases, new wording | free, deterministic |
-| LLM judge (implemented) | commitments, fault, legal, vague timing, safety advice, in any phrasing | the same draft can flip between runs; weaker models miss vague replies systematically | one model call |
-| Rubric judge / second model (not implemented) | the judge's blind spots, if they do not overlap | shared blind spots | one more call |
+| Lexicon screen (measured offline, not in the app) | known risky wording: "refund", "our fault", "guarantee", "we're on it", "reembolso", "culpa nuestra" | paraphrases: missed 9 drafts in ES and 3 in EN, including money promises in plain words ("le mandamos otro", "le regalamos el envío") | free, deterministic |
+| Simple LLM judge (implemented, default) | commitments, fault, legal, vague timing, safety advice, in any phrasing; never missed a money promise | the same draft can flip between runs; weaker models miss specific drafts systematically | one model call |
+| Rubric judge (implemented, opt-in) | one finding per category with a quote; escaped nothing | sends 43–73% of safe drafts to a human, mostly on "vague" | about 2.3× the simple judge |
 | Human | everything above escalates | only what reaches auto-send unseen | reviewer time |
 
 How they combine: **escalate if any layer escalates**, and a layer that errors or times out
@@ -377,8 +384,22 @@ escalation into a send. Cheap layers go first so obvious cases never pay for a m
 
 What this costs: every layer adds false positives (more human reviews). Whether a layer earns
 its place is a measurement, not a guess: run `evaluate` with and without it on the same labeled
-datasets and compare escapes and false positives. Baseline numbers for a lexicon layer and a
-rubric judge are not measured yet.
+datasets and compare escapes and false positives.
+
+Measured on the same 90 drafts per language, 5 runs each
+([evidence](evidence/judge-rubric-vs-rules-2026-11-19/README.md)):
+
+| Condition | Escaped drafts | False positives |
+|---|---|---|
+| Simple judge, gpt-4.1-mini | ES 2, EN 2 | ES 1/150, EN 7/150 |
+| Simple judge, gpt-4.1 (default) | ES 1 doubtful, EN 0 | ES 0/150, EN 2/150 |
+| Rubric judge, gpt-4.1 | 0 | 65/150 |
+| Rules only | ES 9, EN 3 | 1 of 30 safe drafts |
+| Rules + simple judge, gpt-4.1-mini | 0 | ES 5/150, EN 7/150 |
+
+Reading: the rubric buys no safety here and costs a lot of reviews, so it stays opt-in. Rules plus
+the simple judge closed every escape, but the rules were written by the dataset's author, so that
+zero is optimistic until it is checked on a held-out set.
 
 ## Limitations
 
@@ -413,6 +434,6 @@ src/HitlSendReply/
   Agent/        MAF wiring: tools, gate (auto-approval rule), runner, scripted chat client
   Evaluation/   judge measurement over data/drafts.jsonl
   Cli/          colored console UI (presentation only) and LLM settings
-tests/HitlSendReply.Tests/   98 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
+tests/HitlSendReply.Tests/   104 tests (scenario and dataset tests run in EN and ES, plus architecture rules)
 evidence/                    test and console runs
 ```

@@ -1,5 +1,7 @@
 using System.ClientModel;
 using Microsoft.Extensions.AI;
+using HitlSendReply.Judge;
+using HitlSendReply.Policy;
 using OpenAI;
 
 namespace HitlSendReply.Cli;
@@ -9,7 +11,7 @@ namespace HitlSendReply.Cli;
 /// (LAB_LLM_ENDPOINT=http://localhost:11434/v1, any non-empty key).
 /// The agent and the judge use separate models: drafting is cheap, judging is where errors cost.
 /// </summary>
-public sealed record LlmSettings(Uri? Endpoint, string ApiKey, string AgentModel, string JudgeModel)
+public sealed record LlmSettings(Uri? Endpoint, string ApiKey, string AgentModel, string JudgeModel, string JudgeKind = "simple")
 {
     public const string DefaultAgentModel = "gpt-4.1-mini";
 
@@ -32,7 +34,8 @@ public sealed record LlmSettings(Uri? Endpoint, string ApiKey, string AgentModel
             endpoint is null ? null : new Uri(endpoint),
             key,
             Env("LAB_AGENT_MODEL") ?? shared ?? DefaultAgentModel,
-            Env("LAB_JUDGE_MODEL") ?? shared ?? DefaultJudgeModel);
+            Env("LAB_JUDGE_MODEL") ?? shared ?? DefaultJudgeModel,
+            Env("LAB_JUDGE")?.ToLowerInvariant() == "rubric" ? "rubric" : "simple");
     }
 
     public IChatClient CreateChatClient(string model)
@@ -44,6 +47,10 @@ public sealed record LlmSettings(Uri? Endpoint, string ApiKey, string AgentModel
         return new OpenAIClient(new ApiKeyCredential(ApiKey), options).GetChatClient(model).AsIChatClient();
     }
 
+    /// <summary>LAB_JUDGE=rubric selects <see cref="RubricReplyJudge"/>; anything else the simple judge.</summary>
+    public IReplyJudge CreateJudge(IChatClient judgeModel) =>
+        JudgeKind == "rubric" ? new RubricReplyJudge(judgeModel) : new LlmReplyJudge(judgeModel);
+
     private static string? Env(string name) =>
         Environment.GetEnvironmentVariable(name) is { Length: > 0 } v && !string.IsNullOrWhiteSpace(v) ? v : null;
 
@@ -52,6 +59,7 @@ public sealed record LlmSettings(Uri? Endpoint, string ApiKey, string AgentModel
           OPENAI_API_KEY    API key (or LAB_LLM_API_KEY; any non-empty value for Ollama)
           LAB_AGENT_MODEL   optional; default gpt-4.1-mini
           LAB_JUDGE_MODEL   optional; default gpt-4.1
+          LAB_JUDGE         optional; simple (default) or rubric
           LAB_LLM_ENDPOINT  optional; e.g. http://localhost:11434/v1 for Ollama
         Nothing was evaluated, so no results were written.
         """;
