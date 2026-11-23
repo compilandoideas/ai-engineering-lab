@@ -6,7 +6,7 @@ An agent drafts support replies and proposes `send_reply`. Code, not the model, 
 send, ask a human, or block. An LLM judge can only add reasons to stop, never approve.
 
 ```bash
-dotnet run --project src/HitlSendReply.Lab -- scenario all     # no API key needed (scripted model)
+dotnet run --project src/backend/HitlSendReply.Lab -- scenario all     # no API key needed (scripted model)
 ```
 
 With a real model, set `OPENAI_API_KEY` and use `live` (see [Run it](#run-it)).
@@ -17,11 +17,11 @@ More: [Design decisions](#design-decisions) · [Measuring the judge](#measuring-
 
 **Where to start reading**
 
-1. `src/HitlSendReply.Lab/Program.cs`: the three commands, and `Pipeline.cs`, which wires the system.
-2. `src/HitlSendReply/SendReply/SupportAgent.cs`: the agent, its tools, and the policy as the only auto-approval rule.
+1. `src/backend/HitlSendReply.Lab/Program.cs`: the three commands, and `Pipeline.cs`, which wires the system.
+2. `src/backend/HitlSendReply/SendReply/SupportAgent.cs`: the agent, its tools, and the policy as the only auto-approval rule.
 3. `SendReply/ReplyGate.cs`: where each `send_reply` call meets the policy; `SupportRunner.cs` asks the human.
-4. `src/HitlSendReply/Policy/PublishPolicy.cs`: the decision, in order (ticket, permissions, duplicate, prior rejection, facts, judge).
-5. `src/HitlSendReply/Judge/LlmReplyJudge.cs`: the only LLM call in the decision; it can add reasons to stop, never approve.
+4. `src/backend/HitlSendReply/Policy/PublishPolicy.cs`: the decision, in order (ticket, permissions, duplicate, prior rejection, facts, judge).
+5. `src/backend/HitlSendReply/Judge/LlmReplyJudge.cs`: the only LLM call in the decision; it can add reasons to stop, never approve.
 
 A support agent drafts replies and calls one tool, `send_reply(ticketId, text)`. The same tool can
 send a harmless status update or a refund promise the company never approved. This experiment
@@ -32,7 +32,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
 tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (106/106 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (112/112 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -151,10 +151,10 @@ Two projects, so what would ship and what only exists to demo and measure it nev
 system, folders are organized by what each part does, not by technical layer:
 
 ```
-src/HitlSendReply.Lab  (console, scenarios, evaluation, fakes)
+src/backend/HitlSendReply.Lab  (console, scenarios, evaluation, fakes)
         │ references
         ▼
-src/HitlSendReply      SendReply/ (MAF) ──► Policy/ ──► Tickets/
+src/backend/HitlSendReply      SendReply/ (MAF) ──► Policy/ ──► Tickets/
                        Judge/ (LLM)     ◄──── Policy/ asks IReplyJudge
 ```
 
@@ -248,7 +248,7 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (106 passed),
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (112 passed),
 [`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
 (console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
 (rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
@@ -264,8 +264,8 @@ brew install --cask dotnet-sdk        # or the installer from https://dotnet.mic
 dotnet --version                      # 10.x
 git clone <this repo> && cd ai-engineering-lab/experiments/hitl-send-reply
 dotnet test
-dotnet run --project src/HitlSendReply.Lab -- scenario 2              # you are the reviewer: y / n + reason
-dotnet run --project src/HitlSendReply.Lab -- scenario all --lang es   # Spanish dataset
+dotnet run --project src/backend/HitlSendReply.Lab -- scenario 2              # you are the reviewer: y / n + reason
+dotnet run --project src/backend/HitlSendReply.Lab -- scenario all --lang es   # Spanish dataset
 ```
 
 **Linux (Ubuntu 24.04)**: `sudo apt-get install -y dotnet-sdk-10.0`, then the same commands.
@@ -288,17 +288,17 @@ export LAB_LLM_API_KEY=ollama
 export LAB_LLM_MODEL=llama3.1:8b
 
 # real agent + real judge, you review in the terminal; audit goes to ./audit.jsonl
-dotnet run --project src/HitlSendReply.Lab -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
+dotnet run --project src/backend/HitlSendReply.Lab -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
 
 # measure the judge on 100 hand-labeled drafts per language, 3 runs; writes results/<timestamp>-<lang>-<model>.json
-dotnet run --project src/HitlSendReply.Lab -- evaluate --lang en --runs 3
-dotnet run --project src/HitlSendReply.Lab -- evaluate --lang es --runs 3
+dotnet run --project src/backend/HitlSendReply.Lab -- evaluate --lang en --runs 3
+dotnet run --project src/backend/HitlSendReply.Lab -- evaluate --lang es --runs 3
 ```
 
 ## Measuring the judge
 
-Two datasets with the same structure: [`drafts.en.jsonl`](src/HitlSendReply.Lab/data/drafts.en.jsonl)
-and [`drafts.es.jsonl`](src/HitlSendReply.Lab/data/drafts.es.jsonl). Each has 100 fictional drafts
+Two datasets with the same structure: [`drafts.en.jsonl`](src/backend/HitlSendReply.Lab/data/drafts.en.jsonl)
+and [`drafts.es.jsonl`](src/backend/HitlSendReply.Lab/data/drafts.es.jsonl). Each has 100 fictional drafts
 labeled by hand (30 auto-send, 67 human, 3 block); D01–D30 / E01–E30 are the original set and
 D31–D100 / E31–E100 were added later. Some items carry `"doubtful": true` where the label itself is
 debatable (ignored by the loader). The Spanish set is written in Spanish, not
@@ -467,7 +467,7 @@ list problem.
 
 ## Console
 
-The UI lives in `src/HitlSendReply.Lab/Ui/` and only renders what the pipeline did: the scenario, the
+The UI lives in `src/backend/HitlSendReply.Lab/Ui/` and only renders what the pipeline did: the scenario, the
 review panel (exact text, recipient from the ticket, channel), the audit trail and the result.
 Tests never touch it, and the policy has no dependency on it.
 
@@ -476,12 +476,12 @@ Tests never touch it, and the policy has no dependency on it.
 ## Layout
 
 ```
-src/HitlSendReply/                the system: what would ship
+src/backend/HitlSendReply/                the system: what would ship
   Tickets/      ticket, order, idempotency key, permissions, ITicketStore (no framework types)
   SendReply/    the use case on MAF: agent, send_reply tool, gate, runner, approval ledger, human review
   Policy/       PublishPolicy, FactChecker, decisions, and the ports it needs (IOutbox, IReviewHistory)
   Judge/        IReplyJudge, LlmReplyJudge, RubricReplyJudge
-src/HitlSendReply.Lab/            the lab around it: never referenced by the system
+src/backend/HitlSendReply.Lab/            the lab around it: never referenced by the system
   Program.cs    scenario | live | evaluate
   Pipeline.cs   wires one instance of the system with fakes
   Scenarios/    the seven designed cases and their command
@@ -490,7 +490,7 @@ src/HitlSendReply.Lab/            the lab around it: never referenced by the sys
   Ui/           colored console (presentation only), console reviewer
   Fakes/        in-memory outbox, audit log, review history, tickets, scripted model/judge/reviewer
   data/         labeled drafts
-tests/HitlSendReply.Tests/        106 tests, one folder per area (scenario and dataset tests run in EN and ES)
+tests/HitlSendReply.Tests/        112 tests, one folder per area (scenario and dataset tests run in EN and ES)
 heldout/                          blind set, never used to tune
 evidence/                    test and console runs
 ```

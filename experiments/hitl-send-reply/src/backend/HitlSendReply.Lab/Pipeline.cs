@@ -23,7 +23,7 @@ public sealed class Pipeline
     public static Pipeline Create(
         IChatClient agentModel,
         IReplyJudge judge,
-        IHumanApprover human,
+        IHumanApprover? human,
         Language language = Language.En,
         TimeSpan? judgeTimeout = null,
         string? auditPath = null,
@@ -43,8 +43,8 @@ public sealed class Pipeline
         var tools = new SupportTools(tickets, outbox, ledger, audit);
         var agent = SupportAgent.Create(agentModel, tools, gate, disableApprovalResponseBinding);
         var runner = createResponse is null
-            ? new SupportRunner(agent, gate, human, ledger, reviews, audit, tickets)
-            : new SupportRunner(agent, gate, human, ledger, reviews, audit, tickets) { CreateResponse = createResponse };
+            ? new SupportRunner(agent, gate, ledger, reviews, audit, tickets, human)
+            : new SupportRunner(agent, gate, ledger, reviews, audit, tickets, human) { CreateResponse = createResponse };
 
         return new Pipeline
         {
