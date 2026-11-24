@@ -6,7 +6,7 @@ using HitlSendReply.SendReply;
 using HitlSendReply.Tests.Fakes;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Tests.Lab;
+namespace HitlSendReply.Tests.Scenarios;
 
 /// <summary>
 /// The seven designed scenarios, run through the real Microsoft Agent Framework pipeline

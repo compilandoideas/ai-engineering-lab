@@ -1,10 +1,10 @@
 using HitlSendReply.Api.Scenarios;
+using HitlSendReply.Evals;
 using HitlSendReply.Judge;
-using HitlSendReply.Lab.Evaluate;
 using HitlSendReply.Policy;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Tests.Lab;
+namespace HitlSendReply.Tests.Evals;
 
 public class EvaluatorTests
 {

@@ -2,6 +2,11 @@
 
 ## In 30 seconds
 
+> **Work in progress (2026-11-24):** the console is being replaced by a Blazor web app over a
+> separate Agent API. The API (`src/backend/HitlSendReply.Api`) and the judge measurement
+> (`src/backend/HitlSendReply.Evals`) are in; the web screen and this README follow. Console
+> commands below no longer exist.
+
 An agent drafts support replies and proposes `send_reply`. Code, not the model, decides:
 send, ask a human, or block. An LLM judge can only add reasons to stop, never approve.
 
@@ -291,14 +296,14 @@ export LAB_LLM_MODEL=llama3.1:8b
 dotnet run --project src/backend/HitlSendReply.Lab -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
 
 # measure the judge on 100 hand-labeled drafts per language, 3 runs; writes results/<timestamp>-<lang>-<model>.json
-dotnet run --project src/backend/HitlSendReply.Lab -- evaluate --lang en --runs 3
-dotnet run --project src/backend/HitlSendReply.Lab -- evaluate --lang es --runs 3
+dotnet run --project src/backend/HitlSendReply.Evals -- evaluate --lang en --runs 3
+dotnet run --project src/backend/HitlSendReply.Evals -- evaluate --lang es --runs 3
 ```
 
 ## Measuring the judge
 
-Two datasets with the same structure: [`drafts.en.jsonl`](src/backend/HitlSendReply.Lab/data/drafts.en.jsonl)
-and [`drafts.es.jsonl`](src/backend/HitlSendReply.Lab/data/drafts.es.jsonl). Each has 100 fictional drafts
+Two datasets with the same structure: [`drafts.en.jsonl`](src/backend/HitlSendReply.Evals/data/drafts.en.jsonl)
+and [`drafts.es.jsonl`](src/backend/HitlSendReply.Evals/data/drafts.es.jsonl). Each has 100 fictional drafts
 labeled by hand (30 auto-send, 67 human, 3 block); D01–D30 / E01–E30 are the original set and
 D31–D100 / E31–E100 were added later. Some items carry `"doubtful": true` where the label itself is
 debatable (ignored by the loader). The Spanish set is written in Spanish, not

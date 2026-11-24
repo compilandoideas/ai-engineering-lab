@@ -13,7 +13,7 @@
     <ProjectReference Include="..\..\src\backend\HitlSendReply\HitlSendReply.csproj" />
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Api\HitlSendReply.Api.csproj" />
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Contracts\HitlSendReply.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\backend\HitlSendReply.Lab\HitlSendReply.Lab.csproj" />
+    <ProjectReference Include="..\..\src\backend\HitlSendReply.Evals\HitlSendReply.Evals.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

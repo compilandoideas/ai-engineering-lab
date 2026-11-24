@@ -2,22 +2,23 @@ using System.Text.Json;
 using HitlSendReply.Api.Live;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Evaluate;
+namespace HitlSendReply.Evals;
 
 /// <summary><c>evaluate</c>: measures the real judge on the labeled drafts and writes the results to <c>results/</c>.</summary>
 public static class EvaluateCommand
 {
-    public static async Task<int> RunAsync(int runs, Language language)
+    public static async Task<int> RunAsync(int runs, Language language, string set)
     {
         if (LlmSettings.FromEnvironment() is not { } settings)
         {
             Console.Error.WriteLine(LlmSettings.MissingMessage);
+            Console.Error.WriteLine("Nothing was evaluated, so no results were written.");
             return 2;
         }
 
         using var judgeModel = settings.CreateChatClient(settings.JudgeModel);
         var judge = settings.CreateJudge(judgeModel);
-        var drafts = Evaluator.Load(Evaluator.DatasetPath(language));
+        var drafts = Evaluator.Load(Evaluator.DatasetPath(language, set));
         var reports = new List<RunReport>();
 
         for (var run = 1; run <= runs; run++)
@@ -35,7 +36,7 @@ public static class EvaluateCommand
         var evaluation = new EvaluationReport(settings.JudgeModel, language.ToString().ToLowerInvariant(), DateTimeOffset.UtcNow, reports);
         var dir = Path.Combine(Directory.GetCurrentDirectory(), "results");
         Directory.CreateDirectory(dir);
-        var file = Path.Combine(dir, $"{evaluation.At:yyyyMMdd-HHmmss}-{evaluation.Language}-{string.Join("_", settings.JudgeModel.Split(Path.GetInvalidFileNameChars()))}.json");
+        var file = Path.Combine(dir, $"{evaluation.At:yyyyMMdd-HHmmss}-{evaluation.Language}-{set}-{string.Join("_", settings.JudgeModel.Split(Path.GetInvalidFileNameChars()))}.json");
         await File.WriteAllTextAsync(file, JsonSerializer.Serialize(evaluation, Evaluator.Json));
         Console.WriteLine($"Results written to {file}");
         return 0;

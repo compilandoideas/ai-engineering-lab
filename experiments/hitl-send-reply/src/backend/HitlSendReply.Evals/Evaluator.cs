@@ -6,7 +6,7 @@ using HitlSendReply.Policy;
 using HitlSendReply.SendReply;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Evaluate;
+namespace HitlSendReply.Evals;
 
 public sealed record LabeledDraft(string Id, string TicketId, string Text, PolicyOutcome Expected, string Note);
 
@@ -38,8 +38,10 @@ public static class Evaluator
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public static string DatasetPath(Language language) =>
-        Path.Combine(AppContext.BaseDirectory, "data", $"drafts.{language.ToString().ToLowerInvariant()}.jsonl");
+    /// <summary><c>dev</c>: the 100 drafts used while building the judge. <c>blind</c>: the held-out set, never used to tune.</summary>
+    public static string DatasetPath(Language language, string set = "dev") =>
+        Path.Combine(AppContext.BaseDirectory, "data",
+            $"{(set == "blind" ? "blind" : "drafts")}.{language.ToString().ToLowerInvariant()}.jsonl");
 
     public static IReadOnlyList<LabeledDraft> Load(string path) =>
         File.ReadLines(path)

@@ -3,7 +3,7 @@
     <Project Path="src/backend/HitlSendReply/HitlSendReply.csproj" />
     <Project Path="src/backend/HitlSendReply.Api/HitlSendReply.Api.csproj" />
     <Project Path="src/backend/HitlSendReply.Contracts/HitlSendReply.Contracts.csproj" />
-    <Project Path="src/backend/HitlSendReply.Lab/HitlSendReply.Lab.csproj" />
+    <Project Path="src/backend/HitlSendReply.Evals/HitlSendReply.Evals.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/HitlSendReply.Tests/HitlSendReply.Tests.csproj" />

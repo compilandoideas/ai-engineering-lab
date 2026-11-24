@@ -16,7 +16,7 @@ namespace HitlSendReply.Tests.Api;
 /// </summary>
 public class RunsApiTests(RunsApiTests.ApiFactory factory) : IClassFixture<RunsApiTests.ApiFactory>
 {
-    // Any type of the API assembly selects its entry point; Program is ambiguous while the Lab exists.
+    // Any type of the API assembly selects its entry point; Program is ambiguous because Evals also has one.
     public sealed class ApiFactory : WebApplicationFactory<RunStore>
     {
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder) =>

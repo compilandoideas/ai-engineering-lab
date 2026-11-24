@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Measures the real judge through the full policy on labeled drafts. Batch, no UI. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HitlSendReply\HitlSendReply.csproj" />
+    <!-- For the in-memory adapters, sample tickets and model settings the API already owns. -->
+    <ProjectReference Include="..\HitlSendReply.Api\HitlSendReply.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="data\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\heldout\*.jsonl" Link="data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="HitlSendReply.Tests" />
+  </ItemGroup>
+</Project>

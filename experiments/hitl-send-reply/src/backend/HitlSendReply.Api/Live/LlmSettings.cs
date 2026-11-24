@@ -64,6 +64,5 @@ public sealed record LlmSettings(Uri? Endpoint, string ApiKey, string AgentModel
           LAB_JUDGE_MODEL   optional; default gpt-4.1
           LAB_JUDGE         optional; simple (default) or rubric
           LAB_LLM_ENDPOINT  optional; e.g. http://localhost:11434/v1 for Ollama
-        Nothing was evaluated, so no results were written.
         """;
 }

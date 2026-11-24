@@ -6,7 +6,7 @@ using HitlSendReply.Policy;
 namespace HitlSendReply.Tests;
 
 /// <summary>
-/// Three boundaries. The system (HitlSendReply) never knows about its hosts (Api, Lab). The HTTP
+/// Three boundaries. The system (HitlSendReply) never knows about its hosts (Api, Evals). The HTTP
 /// contract (Contracts) knows nothing at all, so a client built on it never sees the agent. Inside
 /// the system, the decision (Tickets, Policy) never knows about the agent framework or the LLM:
 /// MAF lives in SendReply/, the LLM judge in Judge/.
@@ -20,7 +20,7 @@ public class LayeringTests
         "Microsoft.Agents.AI",
         "Microsoft.Extensions.AI",
         "OpenAI",
-        "Spectre.Console",
+        "MudBlazor",
     ];
 
     [Fact]
@@ -30,8 +30,8 @@ public class LayeringTests
 
         Assert.DoesNotContain(typeof(Pipeline).Assembly.GetName().Name, references);
         Assert.DoesNotContain(typeof(RunDto).Assembly.GetName().Name, references);
-        Assert.DoesNotContain("HitlSendReply.Lab", references);
-        Assert.DoesNotContain("Spectre.Console", references);
+        Assert.DoesNotContain("HitlSendReply.Evals", references);
+        Assert.DoesNotContain("MudBlazor", references);
         Assert.DoesNotContain("OpenAI", references);
     }
 
