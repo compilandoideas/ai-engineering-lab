@@ -6,7 +6,7 @@ code you can clone and run.
 
 | Experiment | What it shows | Stack |
 |---|---|---|
-| [hitl-send-reply](experiments/hitl-send-reply/) | Selective human-in-the-loop for an agent tool: the LLM proposes, the application authorizes | C# · .NET 10 · Microsoft Agent Framework · xUnit |
+| [hitl-send-reply](experiments/hitl-send-reply/) | Selective human-in-the-loop for an agent tool: the LLM proposes, the application authorizes | C# · .NET 10 · Microsoft Agent Framework · ASP.NET Core · Blazor · xUnit |
 
 Conventions:
 

@@ -11,3 +11,4 @@ audit.jsonl
 __pycache__/
 .venv/
 plans/
+node_modules/

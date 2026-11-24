@@ -2,19 +2,16 @@
 
 ## In 30 seconds
 
-> **Work in progress (2026-11-24):** the console is being replaced by a Blazor web app over a
-> separate Agent API. The API (`src/backend/HitlSendReply.Api`) and the judge measurement
-> (`src/backend/HitlSendReply.Evals`) are in; the web screen and this README follow. Console
-> commands below no longer exist.
-
 An agent drafts support replies and proposes `send_reply`. Code, not the model, decides:
-send, ask a human, or block. An LLM judge can only add reasons to stop, never approve.
+send, ask a human, or block. An LLM judge can only add reasons to stop, never approve. A web
+screen shows a person exactly what is waiting and lets them approve, or reject with a reason.
 
 ```bash
-dotnet run --project src/backend/HitlSendReply.Lab -- scenario all     # no API key needed (scripted model)
+scripts/run.sh            # Agent API on :5080, Web on :5090. No API key needed for the scenarios
+open http://localhost:5090
 ```
 
-With a real model, set `OPENAI_API_KEY` and use `live` (see [Run it](#run-it)).
+With a real model, set `OPENAI_API_KEY` before `scripts/run.sh` and pick "Live model" (see [Run it](#run-it)).
 
 **Key result** (blind set, gpt-4.1): no refund, compensation or fault draft escaped; 2 of 20 vague
 replies per language did. Counts on 40 drafts per language, labels still under human review.
@@ -22,22 +19,23 @@ More: [Design decisions](#design-decisions) · [Measuring the judge](#measuring-
 
 **Where to start reading**
 
-1. `src/backend/HitlSendReply.Lab/Program.cs`: the three commands, and `Pipeline.cs`, which wires the system.
+1. `src/backend/HitlSendReply.Api/Runs/RunEndpoints.cs`: start a run, read it, answer a review. `Runs/Pipeline.cs` wires the system.
 2. `src/backend/HitlSendReply/SendReply/SupportAgent.cs`: the agent, its tools, and the policy as the only auto-approval rule.
-3. `SendReply/ReplyGate.cs`: where each `send_reply` call meets the policy; `SupportRunner.cs` asks the human.
+3. `SendReply/ReplyGate.cs`: where each `send_reply` call meets the policy; `SupportRunner.cs` pauses for the human and resumes with the verdict.
 4. `src/backend/HitlSendReply/Policy/PublishPolicy.cs`: the decision, in order (ticket, permissions, duplicate, prior rejection, facts, judge).
 5. `src/backend/HitlSendReply/Judge/LlmReplyJudge.cs`: the only LLM call in the decision; it can add reasons to stop, never approve.
+6. `src/frontend/HitlSendReply.Web.Client/Pages/Review.razor`: the review screen, built only on the HTTP contract.
 
 A support agent drafts replies and calls one tool, `send_reply(ticketId, text)`. The same tool can
 send a harmless status update or a refund promise the company never approved. This experiment
 puts a human in the loop **only where it matters**, and keeps the decision about *who may send*
 out of the model's hands.
 
-Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents.AI`), xUnit.
-Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
-tests, real model optional.
+Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents.AI`), an ASP.NET
+Core minimal API, a Blazor Web App (WebAssembly, MudBlazor) behind a YARP forwarder, and xUnit.
+Fictional data in **English and Spanish**, scripted model for tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (133/133 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (136/136 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -45,6 +43,23 @@ tests, real model optional.
 > This is not production code.
 
 ## Design
+
+Three processes, one direction of dependency:
+
+```
+Browser (Blazor WebAssembly)            knows only the HTTP contract (Contracts)
+   │  /api/...  same origin
+   ▼
+Web server (HitlSendReply.Web)          serves the client; YARP forwards /api ── the future BFF:
+   │  /api/...                          the access token is added here, never in the browser
+   ▼
+Agent API (HitlSendReply.Api)           runs, reviews, catalog; contract in contracts/openapi-v1.json
+   │  in process
+   ▼
+The system (HitlSendReply)              agent (MAF), publish policy, judge
+```
+
+Inside one run:
 
 ```
 customer message ──► Agent (LLM) ──► send_reply(ticketId, text)
@@ -135,8 +150,36 @@ Each one: the decision, the alternative discarded, why, and what backs it.
    Discarded: putting the rules inside framework callbacks. The policy must survive a framework
    change and a port to Python.
    Evidence: `LayeringTests` (fails if `Tickets/` or `Policy/` reference MAF,
-   `Microsoft.Extensions.AI`, OpenAI or the UI, or if the system references the lab; verified by
+   `Microsoft.Extensions.AI` or OpenAI, or if the system references its hosts; verified by
    introducing a violation).
+
+10. **The agent runs behind its own API, not inside the web app.**
+    Discarded: calling the system from the Blazor server directly. The approval loop has to pause
+    for a person anyway, so it is already a request/response protocol: start a run, read the
+    pending review, answer it. Putting HTTP there makes the UI replaceable and the agent portable
+    (a FastAPI port implements `contracts/openapi-v1.json` and the screen does not change).
+    Evidence: `RunsApiTests` (every scenario through HTTP, plus rejection without a reason → 400,
+    double review → 409); `SupportRunnerResumeTests` (the paused run resumes with the same guarantees);
+    `LayeringTests` (Web and Web.Client reference neither the system nor MAF; Contracts references nothing).
+
+11. **BFF-ready, with no auth in this experiment.**
+    Discarded: adding a login now. It would add a provider and setup to an experiment about
+    approvals. The shape is ready: the browser only calls its own server, and the server forwards
+    `/api`. Adding auth changes three things: cookie login on the Web server, a request transform on
+    the `MapForwarder` in `src/frontend/HitlSendReply.Web/Program.cs` that attaches the access token,
+    and JWT validation plus the reviewer taken from the token (not from the request body) on the API.
+    The client and the contract do not change.
+
+12. **AG-UI was considered and not used.**
+    Discarded: hosting the agent with MAF's AG-UI endpoint. In 1.28.0 that hosting package is a
+    preview, and the protocol streams the agent's events, while this screen needs the policy's
+    decision and the audit trail, which are application data, not agent events. A plain contract
+    with three endpoints is smaller and can be ported.
+
+13. **UI components stay inside the experiment.**
+    Discarded: a shared component library for future posts. There is one screen today; the
+    components (`DecisionTrace`, `ReviewPanel`, `AuditTimeline`, `RunResult`) move to a shared
+    project when a second experiment needs them, not before.
 
 ## How it maps to Microsoft Agent Framework
 
@@ -152,15 +195,16 @@ All APIs below were compiled and exercised against `Microsoft.Agents.AI` 1.28.0 
 
 ## Policy is framework-agnostic; MAF is an adapter
 
-Two projects, so what would ship and what only exists to demo and measure it never mix. Inside the
-system, folders are organized by what each part does, not by technical layer:
+The system is one project; its hosts (the Agent API, the Evals console) reference it, never the
+other way round. Inside the system, folders are organized by what each part does, not by
+technical layer:
 
 ```
-src/backend/HitlSendReply.Lab  (console, scenarios, evaluation, fakes)
+src/backend/HitlSendReply.Api, HitlSendReply.Evals   (hosts: HTTP, scenarios, in-memory stores, measurement)
         │ references
         ▼
 src/backend/HitlSendReply      SendReply/ (MAF) ──► Policy/ ──► Tickets/
-                       Judge/ (LLM)     ◄──── Policy/ asks IReplyJudge
+                               Judge/ (LLM)     ◄── Policy/ asks IReplyJudge
 ```
 
 - `Tickets/` and `Policy/` decide everything that matters (block, human, auto-send) and reference
@@ -169,7 +213,7 @@ src/backend/HitlSendReply      SendReply/ (MAF) ──► Policy/ ──► Tick
   decisions into `CreateResponse(...)`. Swap the framework and only this folder changes.
 - `Judge/` holds `IReplyJudge` and the two judges that talk to a model.
 - `LayeringTests` (NetArchTest) fails if `Tickets/` or `Policy/` take a dependency on a framework
-  or on `SendReply/`, or if the system references the lab. A guard test checks the rule is not
+  or on `SendReply/`, or if the system references its hosts. A guard test checks the rule is not
   vacuous, and it was verified by adding a temporary `Microsoft.Extensions.AI` type to `Policy/`
   (the test failed).
 
@@ -214,6 +258,9 @@ AIAgent guarded = agent.AsBuilder()
   evaluated from scratch.
 - An auto-approval rule can only approve or pass. Blocking without a human is done by the
   application answering the surfaced request with `CreateResponse(false, reason)`.
+- **The run can pause between HTTP requests.** `SupportRunner.StartAsync` runs until a call needs a
+  person and returns an `ApprovalRun` holding the `AgentSession` and the pending requests;
+  `ResumeAsync` records the verdict and continues the same session. The API keeps runs in memory.
 
 ### What the real model showed (gpt-4.1-mini, 2026-11-19) and what changed
 
@@ -253,14 +300,13 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (133 passed),
-[`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
-(console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
-(rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (136 passed) and
+[`evidence/screenshots/web/`](evidence/screenshots/web/), saved by `scripts/smoke.mjs`, which runs
+scenarios 1 and 2 through the web screen in a real browser.
 
 ## Run it
 
-Requirements: .NET 10 SDK. Nothing else for tests and scenarios.
+Requirements: .NET 10 SDK. Nothing else for tests and scenarios. Node.js only for the smoke test.
 
 **macOS**
 
@@ -269,20 +315,35 @@ brew install --cask dotnet-sdk        # or the installer from https://dotnet.mic
 dotnet --version                      # 10.x
 git clone <this repo> && cd ai-engineering-lab/experiments/hitl-send-reply
 dotnet test
-dotnet run --project src/backend/HitlSendReply.Lab -- scenario 2              # you are the reviewer: y / n + reason
-dotnet run --project src/backend/HitlSendReply.Lab -- scenario all --lang es   # Spanish dataset
+scripts/run.sh                        # Agent API http://localhost:5080, Web http://localhost:5090
+```
+
+Open `http://localhost:5090`, pick a scenario and press Run. Scenario 2 stops for you: approve it,
+or write a reason and reject it. EN/ES and light/dark are in the top bar. The API contract is at
+`http://localhost:5080/openapi/v1.json`.
+
+In Rider: run the `http` profile of `HitlSendReply.Api` and of `HitlSendReply.Web`, or create a
+Compound run configuration with both.
+
+Smoke test through a real browser (with `scripts/run.sh` running):
+
+```bash
+npm install --no-save playwright && npx playwright install chromium   # from this folder
+node scripts/smoke.mjs                # exit 0; screenshots in evidence/screenshots/web/
 ```
 
 **Linux (Ubuntu 24.04)**: `sudo apt-get install -y dotnet-sdk-10.0`, then the same commands.
-**Windows**: `winget install Microsoft.DotNet.SDK.10`, then the same commands.
+**Windows**: `winget install Microsoft.DotNet.SDK.10`, then the same commands (run the two
+projects with `dotnet run --project ...` instead of the shell script).
 
 ### With a real model (optional)
 
-Any OpenAI-compatible endpoint works: OpenAI, Azure OpenAI (v1 endpoint) or Ollama.
+Any OpenAI-compatible endpoint works: OpenAI, Azure OpenAI (v1 endpoint) or Ollama. The Agent API
+reads the settings from its environment; the key never goes to the browser.
 
 ```bash
 # OpenAI. Agent defaults to gpt-4.1-mini, judge to gpt-4.1
-export OPENAI_API_KEY=sk-...
+export OPENAI_API_KEY=...
 # export LAB_AGENT_MODEL=gpt-4.1-mini LAB_JUDGE_MODEL=gpt-4.1   # optional overrides
 # export LAB_JUDGE=rubric   # optional: rubric judge instead of the simple one (see Detection layers)
 
@@ -292,12 +353,16 @@ export LAB_LLM_ENDPOINT=http://localhost:11434/v1
 export LAB_LLM_API_KEY=ollama
 export LAB_LLM_MODEL=llama3.1:8b
 
-# real agent + real judge, you review in the terminal; audit goes to ./audit.jsonl
-dotnet run --project src/backend/HitlSendReply.Lab -- live --lang es --ticket T-1002 --message "El paquete llegó dañado."
+scripts/run.sh                        # then "Live model" on the screen: pick a ticket, write the message
+```
 
-# measure the judge on 100 hand-labeled drafts per language, 3 runs; writes results/<timestamp>-<lang>-<model>.json
-dotnet run --project src/backend/HitlSendReply.Evals -- evaluate --lang en --runs 3
-dotnet run --project src/backend/HitlSendReply.Evals -- evaluate --lang es --runs 3
+Without a key, a live run answers 409 and the screen says so.
+
+Measure the judge (needs a key; writes `results/<timestamp>-<lang>-<model>.json`):
+
+```bash
+dotnet run --project src/backend/HitlSendReply.Evals -- evaluate --lang en --runs 3              # development set
+dotnet run --project src/backend/HitlSendReply.Evals -- evaluate --lang es --runs 3 --set blind  # blind set (heldout/)
 ```
 
 ## Measuring the judge
@@ -411,7 +476,7 @@ draft goes to a human.
 ## Detection layers you can add
 
 The judge is a port (`IReplyJudge`), so more detection layers chain behind it without touching
-the policy. Today the lab runs deterministic checks plus one LLM judge, simple or rubric
+the policy. Today the system runs deterministic checks plus one LLM judge, simple or rubric
 (`LAB_JUDGE=rubric`). A lexicon screen and the composition of several layers are **not
 implemented** in the app; the lexicon was measured offline as a script.
 
@@ -468,34 +533,41 @@ list problem.
 - **"Edit" is not native.** The reviewer approves or rejects with a reason; the agent rewrites.
 - **The judge can be wrong both ways.** A false negative only ships if every verifiable check also
   passed.
-- In-memory stores, fake outbox, no persistence of sessions. Not production code.
+- In-memory stores and outbox; runs live in the API's memory and are lost on restart. No auth
+  (see decision 11). Not production code.
 
-## Console
+## The review screen
 
-The UI lives in `src/backend/HitlSendReply.Lab/Ui/` and only renders what the pipeline did: the scenario, the
-review panel (exact text, recipient from the ticket, channel), the audit trail and the result.
-Tests never touch it, and the policy has no dependency on it.
+The screen only renders what the API returns: the ticket and the customer's message; the agent's
+draft, where it would go (taken from the ticket) and the policy trace stage by stage; the decision
+(approve, or reject with a required reason); then the result and the audit trail.
 
-![Spanish prompt-injection scenario](evidence/screenshots/es-4-prompt-injection.png)
+![Scenario 2 waiting for a person](evidence/screenshots/web/scenario2-pending-1440-light.png)
+
+The trace is derived from the stage that decided: the policy runs its checks in a fixed order and
+stops at the first one that decides, so earlier stages passed and later ones were not reached. The
+contract does not carry per-stage results; if the policy order changes, `DecisionTrace` changes too.
 
 ## Layout
 
 ```
-src/backend/HitlSendReply/                the system: what would ship
+contracts/openapi-v1.json         the HTTP contract, regenerated on build (language-neutral)
+src/backend/HitlSendReply/        the system: what would ship
   Tickets/      ticket, order, idempotency key, permissions, ITicketStore (no framework types)
-  SendReply/    the use case on MAF: agent, send_reply tool, gate, runner, approval ledger, human review
+  SendReply/    the use case on MAF: agent, send_reply tool, gate, resumable runner, approval ledger
   Policy/       PublishPolicy, FactChecker, decisions, and the ports it needs (IOutbox, IReviewHistory)
   Judge/        IReplyJudge, LlmReplyJudge, RubricReplyJudge
-src/backend/HitlSendReply.Lab/            the lab around it: never referenced by the system
-  Program.cs    scenario | live | evaluate
-  Pipeline.cs   wires one instance of the system with fakes
-  Scenarios/    the seven designed cases and their command
-  Live/         real model on one ticket
-  Evaluate/     judge measurement over data/drafts.<lang>.jsonl
-  Ui/           colored console (presentation only), console reviewer
-  Fakes/        in-memory outbox, audit log, review history, tickets, scripted model/judge/reviewer
-  data/         labeled drafts
-tests/HitlSendReply.Tests/        133 tests, one folder per area (scenario and dataset tests run in EN and ES)
+src/backend/HitlSendReply.Contracts/  request and response records; references nothing
+src/backend/HitlSendReply.Api/    the Agent API: never referenced by the system
+  Runs/         endpoints, run store, mapper, Pipeline (wires one instance of the system)
+  Scenarios/    the seven designed cases, scripted model and judge, catalog endpoints
+  InMemory/     outbox, audit log, review history, sample tickets
+  Live/         real model settings
+src/backend/HitlSendReply.Evals/  judge measurement over data/drafts.<lang>.jsonl and heldout/
+src/frontend/HitlSendReply.Web/        serves the client, forwards /api with YARP (future BFF)
+src/frontend/HitlSendReply.Web.Client/ the screen: Pages/, Components/, Api/AgentApiClient, Localization/
+tests/HitlSendReply.Tests/        136 tests, one folder per area (scenario and dataset tests run in EN and ES)
+scripts/                          run.sh (both processes), smoke.mjs (browser smoke test)
 heldout/                          blind set, never used to tune
-evidence/                    test and console runs
+evidence/                         test runs, live runs, judge studies, web screenshots
 ```

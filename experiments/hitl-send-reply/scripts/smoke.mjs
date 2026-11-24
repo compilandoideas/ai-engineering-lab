@@ -1,7 +1,8 @@
 // Smoke test of the Web app through a real browser. Needs scripts/run.sh running.
 // Runs scenario 1 (auto-sent) and scenario 2 (stopped for a human, then approved) and saves
 // screenshots at 1440 and 390 px, light and dark, to evidence/screenshots/web/.
-// Usage: node scripts/smoke.mjs [baseUrl]   (Playwright: npm i -g playwright, or npx)
+// Usage: node scripts/smoke.mjs [baseUrl]
+// Playwright, from the experiment folder: npm install --no-save playwright && npx playwright install chromium
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
