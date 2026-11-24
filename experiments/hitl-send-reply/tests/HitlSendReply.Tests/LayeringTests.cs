@@ -1,12 +1,14 @@
-using HitlSendReply.Lab;
-using HitlSendReply.Policy;
 using NetArchTest.Rules;
+using HitlSendReply.Api.Runs;
+using HitlSendReply.Contracts;
+using HitlSendReply.Policy;
 
 namespace HitlSendReply.Tests;
 
 /// <summary>
-/// Two boundaries. The system (HitlSendReply) never knows about the lab around it. Inside the
-/// system, the decision (Tickets, Policy) never knows about the agent framework or the LLM:
+/// Three boundaries. The system (HitlSendReply) never knows about its hosts (Api, Lab). The HTTP
+/// contract (Contracts) knows nothing at all, so a client built on it never sees the agent. Inside
+/// the system, the decision (Tickets, Policy) never knows about the agent framework or the LLM:
 /// MAF lives in SendReply/, the LLM judge in Judge/.
 /// </summary>
 public class LayeringTests
@@ -22,13 +24,24 @@ public class LayeringTests
     ];
 
     [Fact]
-    public void The_system_does_not_reference_the_lab_the_console_or_a_model_provider()
+    public void The_system_does_not_reference_its_hosts_the_contract_the_console_or_a_model_provider()
     {
         var references = SystemAssembly.GetReferencedAssemblies().Select(a => a.Name).ToList();
 
         Assert.DoesNotContain(typeof(Pipeline).Assembly.GetName().Name, references);
+        Assert.DoesNotContain(typeof(RunDto).Assembly.GetName().Name, references);
+        Assert.DoesNotContain("HitlSendReply.Lab", references);
         Assert.DoesNotContain("Spectre.Console", references);
         Assert.DoesNotContain("OpenAI", references);
+    }
+
+    [Fact]
+    public void The_contract_references_nothing_in_the_solution_nor_a_framework()
+    {
+        var references = typeof(RunDto).Assembly.GetReferencedAssemblies().Select(a => a.Name!).ToList();
+
+        Assert.DoesNotContain(references, r => r.StartsWith("HitlSendReply", StringComparison.Ordinal));
+        Assert.DoesNotContain(references, r => r.StartsWith("Microsoft.Agents", StringComparison.Ordinal) || r.StartsWith("Microsoft.Extensions.AI", StringComparison.Ordinal));
     }
 
     [Theory]

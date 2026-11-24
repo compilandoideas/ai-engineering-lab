@@ -1,4 +1,4 @@
-using HitlSendReply.Lab.Fakes;
+using HitlSendReply.Api.InMemory;
 using HitlSendReply.Policy;
 using HitlSendReply.Tickets;
 

@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using HitlSendReply.Policy;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.InMemory;
 
 public sealed class InMemoryReviewHistory : IReviewHistory
 {

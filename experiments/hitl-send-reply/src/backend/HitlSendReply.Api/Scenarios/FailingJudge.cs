@@ -2,7 +2,7 @@ using System.Diagnostics;
 using HitlSendReply.Judge;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.Scenarios;
 
 public sealed class FailingJudge(Exception error) : IReplyJudge
 {

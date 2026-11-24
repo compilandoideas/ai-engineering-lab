@@ -2,12 +2,12 @@ using System.Collections.Concurrent;
 using HitlSendReply.Policy;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.InMemory;
 
 /// <summary>
 /// Stand-in for the email gateway. Idempotent: the same (ticket, text hash) is delivered once.
 /// </summary>
-public sealed class FakeOutbox(TimeProvider clock) : IOutbox
+public sealed class InMemoryOutbox(TimeProvider clock) : IOutbox
 {
     private readonly ConcurrentDictionary<ReplyKey, SentReply> _sent = new();
 

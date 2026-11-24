@@ -1,6 +1,6 @@
 using HitlSendReply.SendReply;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Tests.Fakes;
 
 /// <summary>Programmed reviewer for tests. Records every prompt it was shown.</summary>
 public sealed class ScriptedApprover(Func<ApprovalPrompt, HumanVerdict> decide) : IHumanApprover

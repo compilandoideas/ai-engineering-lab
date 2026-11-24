@@ -1,9 +1,9 @@
+using HitlSendReply.Api.InMemory;
 using HitlSendReply.Judge;
-using HitlSendReply.Lab.Fakes;
 using HitlSendReply.Policy;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Scenarios;
+namespace HitlSendReply.Api.Scenarios;
 
 /// <summary>The seven designed cases, scripted in English and Spanish.</summary>
 public static class ScenarioCatalog

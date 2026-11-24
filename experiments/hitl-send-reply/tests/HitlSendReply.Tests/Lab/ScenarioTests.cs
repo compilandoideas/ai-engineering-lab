@@ -1,9 +1,9 @@
+using HitlSendReply.Api.Runs;
+using HitlSendReply.Api.Scenarios;
 using HitlSendReply.Judge;
-using HitlSendReply.Lab;
-using HitlSendReply.Lab.Fakes;
-using HitlSendReply.Lab.Scenarios;
 using HitlSendReply.Policy;
 using HitlSendReply.SendReply;
+using HitlSendReply.Tests.Fakes;
 using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Tests.Lab;

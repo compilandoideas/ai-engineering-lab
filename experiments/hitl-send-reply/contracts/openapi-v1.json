@@ -1,0 +1,347 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "HitlSendReply.Api | v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/scenarios": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "operationId": "ListScenarios",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScenarioDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tickets": {
+      "get": {
+        "tags": [
+          "Catalog"
+        ],
+        "operationId": "ListTickets",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TicketDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/runs": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "StartRun",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/runs/{runId}": {
+      "get": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "GetRun",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/runs/{runId}/reviews/{callId}": {
+      "post": {
+        "tags": [
+          "Runs"
+        ],
+        "operationId": "ReviewRun",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "callId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrderDto": {
+        "required": [
+          "id",
+          "status",
+          "shippedOn",
+          "estimatedDelivery",
+          "total",
+          "currency"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "shippedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "estimatedDelivery": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewRequest": {
+        "required": [
+          "approved",
+          "reason",
+          "reviewer"
+        ],
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reviewer": {
+            "type": "string"
+          }
+        }
+      },
+      "RunMode": {
+        "enum": [
+          "Scenario",
+          "Live"
+        ]
+      },
+      "ScenarioDto": {
+        "required": [
+          "number",
+          "name",
+          "ticketId",
+          "customerMessage",
+          "expectedFirstDecision",
+          "expectation"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ticketId": {
+            "type": "string"
+          },
+          "customerMessage": {
+            "type": "string"
+          },
+          "expectedFirstDecision": {
+            "type": "string"
+          },
+          "expectation": {
+            "type": "string"
+          }
+        }
+      },
+      "StartRunRequest": {
+        "required": [
+          "mode"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/RunMode"
+          },
+          "scenario": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "ticketId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customerMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lang": {
+            "type": "string",
+            "default": "en"
+          }
+        }
+      },
+      "TicketDto": {
+        "required": [
+          "id",
+          "customerAddress",
+          "channel",
+          "isClosed",
+          "language",
+          "order"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "customerAddress": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "isClosed": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          },
+          "order": {
+            "$ref": "#/components/schemas/OrderDto"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Catalog"
+    },
+    {
+      "name": "Runs"
+    }
+  ]
+}

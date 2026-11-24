@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Globalization;
+using Microsoft.Extensions.AI;
 using HitlSendReply.Policy;
 using HitlSendReply.Tickets;
-using Microsoft.Extensions.AI;
 
 namespace HitlSendReply.SendReply;
 

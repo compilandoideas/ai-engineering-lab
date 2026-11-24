@@ -2,7 +2,7 @@ using System.Diagnostics;
 using HitlSendReply.Judge;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.Scenarios;
 
 /// <summary>
 /// Deterministic judge for tests and offline demos. It returns what it is told to; it does not

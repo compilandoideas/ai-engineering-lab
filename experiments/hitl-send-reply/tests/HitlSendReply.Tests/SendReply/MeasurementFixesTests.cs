@@ -1,8 +1,10 @@
+using HitlSendReply.Api.InMemory;
+using HitlSendReply.Api.Runs;
+using HitlSendReply.Api.Scenarios;
 using HitlSendReply.Judge;
-using HitlSendReply.Lab;
-using HitlSendReply.Lab.Fakes;
 using HitlSendReply.Policy;
 using HitlSendReply.SendReply;
+using HitlSendReply.Tests.Fakes;
 using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Tests.SendReply;
@@ -61,7 +63,7 @@ public class MeasurementFixesTests
         var reviews = new InMemoryReviewHistory();
         reviews.RecordRejection(ReplyKey.For("T-1002", "anything"), "no");
         var policy = new PublishPolicy(SampleTickets.Store(), AgentPermissions.EmailOnly("SupportAgent"),
-            new FakeOutbox(TimeProvider.System), ScriptedJudge.AlwaysClear(),
+            new InMemoryOutbox(TimeProvider.System), ScriptedJudge.AlwaysClear(),
             new PublishPolicyOptions("SupportAgent", TimeSpan.FromSeconds(5)), reviews);
 
         var decision = await policy.EvaluateAsync(

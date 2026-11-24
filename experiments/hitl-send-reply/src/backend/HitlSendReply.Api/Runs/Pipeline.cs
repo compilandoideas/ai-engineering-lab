@@ -1,12 +1,12 @@
+using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
+using HitlSendReply.Api.InMemory;
 using HitlSendReply.Judge;
-using HitlSendReply.Lab.Fakes;
 using HitlSendReply.Policy;
 using HitlSendReply.SendReply;
 using HitlSendReply.Tickets;
-using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
 
-namespace HitlSendReply.Lab;
+namespace HitlSendReply.Api.Runs;
 
 /// <summary>
 /// Composition root: wires one isolated instance of the system with in-memory fakes around it.
@@ -33,9 +33,9 @@ public sealed class Pipeline
     {
         clock ??= TimeProvider.System;
         var tickets = SampleTickets.Store(language);
-        var outbox = new FakeOutbox(clock);
+        var outbox = new InMemoryOutbox(clock);
         var ledger = new ApprovalLedger();
-        var audit = new AuditLog(clock, auditPath);
+        var audit = new InMemoryAuditLog(clock, auditPath);
         var reviews = new InMemoryReviewHistory();
         var policy = new PublishPolicy(tickets, AgentPermissions.EmailOnly(SupportAgent.AgentName), outbox, judge,
             new PublishPolicyOptions(SupportAgent.AgentName, judgeTimeout ?? TimeSpan.FromSeconds(20)), reviews);

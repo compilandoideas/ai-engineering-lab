@@ -1,15 +1,14 @@
-using HitlSendReply.Lab;
-using HitlSendReply.Lab.Fakes;
+using Microsoft.Extensions.AI;
+using HitlSendReply.Api.Runs;
 using HitlSendReply.SendReply;
 using HitlSendReply.Tickets;
-using Microsoft.Extensions.AI;
 
-namespace HitlSendReply.Lab.Scenarios;
+namespace HitlSendReply.Api.Scenarios;
 
 /// <summary>Builds an isolated pipeline for one designed scenario (offline: scripted model and judge).</summary>
 public static class ScenarioHarness
 {
-    public static (Pipeline Pipeline, ScriptedChatClient Model) Build(Scenario scenario, IHumanApprover approver, string? auditPath = null, bool disableApprovalResponseBinding = false)
+    public static (Pipeline Pipeline, ScriptedChatClient Model) Build(Scenario scenario, IHumanApprover? approver, string? auditPath = null, bool disableApprovalResponseBinding = false)
     {
         var model = new ScriptedChatClient(scenario.Ticket.Id, scenario.Drafts);
         var pipeline = Pipeline.Create(model, scenario.Judge(), approver, scenario.Ticket.Language, auditPath: auditPath,

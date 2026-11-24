@@ -1,4 +1,4 @@
-using HitlSendReply.Lab.Scenarios;
+using HitlSendReply.Api.Scenarios;
 using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Lab.Ui;

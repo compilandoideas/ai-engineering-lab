@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
-using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json;
 using HitlSendReply.SendReply;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.InMemory;
 
 /// <summary>In-memory audit log, optionally mirrored to a JSONL file.</summary>
-public sealed class AuditLog(TimeProvider clock, string? jsonlPath = null) : IAuditLog
+public sealed class InMemoryAuditLog(TimeProvider clock, string? jsonlPath = null) : IAuditLog
 {
     private static readonly JsonSerializerOptions Json = new()
     {

@@ -1,9 +1,9 @@
 using System.ClientModel;
-using HitlSendReply.Judge;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using HitlSendReply.Judge;
 
-namespace HitlSendReply.Lab;
+namespace HitlSendReply.Api.Live;
 
 /// <summary>
 /// Any OpenAI-compatible endpoint: OpenAI, Azure OpenAI (v1 endpoint) or Ollama

@@ -1,7 +1,9 @@
+using HitlSendReply.Api.InMemory;
+using HitlSendReply.Api.Scenarios;
 using HitlSendReply.Judge;
-using HitlSendReply.Lab.Fakes;
 using HitlSendReply.Policy;
 using HitlSendReply.SendReply;
+using HitlSendReply.Tests.Fakes;
 using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Tests.Policy;
@@ -10,9 +12,9 @@ public class PublishPolicyTests
 {
     private const string SafeText = "According to our system, your order #A-1042 shipped on November 12.";
 
-    private static (PublishPolicy Policy, FakeOutbox Outbox) Create(IReplyJudge judge, TimeSpan? timeout = null)
+    private static (PublishPolicy Policy, InMemoryOutbox Outbox) Create(IReplyJudge judge, TimeSpan? timeout = null)
     {
-        var outbox = new FakeOutbox(TimeProvider.System);
+        var outbox = new InMemoryOutbox(TimeProvider.System);
         var policy = new PublishPolicy(SampleTickets.Store(), AgentPermissions.EmailOnly("SupportAgent"), outbox, judge,
             new PublishPolicyOptions("SupportAgent", timeout ?? TimeSpan.FromSeconds(5)));
         return (policy, outbox);

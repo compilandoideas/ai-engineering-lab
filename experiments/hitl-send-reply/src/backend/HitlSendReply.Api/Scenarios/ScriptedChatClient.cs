@@ -1,7 +1,7 @@
-using HitlSendReply.SendReply;
 using Microsoft.Extensions.AI;
+using HitlSendReply.SendReply;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.Scenarios;
 
 /// <summary>
 /// Deterministic stand-in for the model, so the approval pipeline can be tested without an LLM.

@@ -1,8 +1,7 @@
-using HitlSendReply.Lab.Scenarios;
+using Spectre.Console;
+using HitlSendReply.Api.Scenarios;
 using HitlSendReply.Policy;
 using HitlSendReply.SendReply;
-using HitlSendReply.Tickets;
-using Spectre.Console;
 
 namespace HitlSendReply.Lab.Ui;
 

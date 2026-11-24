@@ -2,7 +2,7 @@ using HitlSendReply.Judge;
 using HitlSendReply.Policy;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Scenarios;
+namespace HitlSendReply.Api.Scenarios;
 
 /// <summary>
 /// The seven designed cases, in English and Spanish. The agent's drafts and the judge's signals

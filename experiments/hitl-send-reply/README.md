@@ -32,7 +32,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Colored console (Spectre.Console), fictional data in **English and Spanish**, scripted model for
 tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (112/112 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (133/133 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -248,7 +248,7 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (112 passed),
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (133 passed),
 [`evidence/scenarios.en.txt`](evidence/scenarios.en.txt) / [`scenarios.es.txt`](evidence/scenarios.es.txt)
 (console runs, reviewer answers piped in) and [`evidence/screenshots/`](evidence/screenshots/)
 (rendered from the real console's ANSI output with `LAB_FORCE_COLOR=1`).
@@ -490,7 +490,7 @@ src/backend/HitlSendReply.Lab/            the lab around it: never referenced by
   Ui/           colored console (presentation only), console reviewer
   Fakes/        in-memory outbox, audit log, review history, tickets, scripted model/judge/reviewer
   data/         labeled drafts
-tests/HitlSendReply.Tests/        112 tests, one folder per area (scenario and dataset tests run in EN and ES)
+tests/HitlSendReply.Tests/        133 tests, one folder per area (scenario and dataset tests run in EN and ES)
 heldout/                          blind set, never used to tune
 evidence/                    test and console runs
 ```

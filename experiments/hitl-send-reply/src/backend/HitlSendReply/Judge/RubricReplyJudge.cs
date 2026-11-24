@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
-using HitlSendReply.Tickets;
 using Microsoft.Extensions.AI;
+using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Judge;
 

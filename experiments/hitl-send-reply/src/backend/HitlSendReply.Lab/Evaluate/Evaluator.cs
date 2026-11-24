@@ -1,7 +1,7 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json;
+using HitlSendReply.Api.InMemory;
 using HitlSendReply.Judge;
-using HitlSendReply.Lab.Fakes;
 using HitlSendReply.Policy;
 using HitlSendReply.SendReply;
 using HitlSendReply.Tickets;
@@ -57,7 +57,7 @@ public static class Evaluator
             var policy = new PublishPolicy(
                 SampleTickets.Store(language),
                 AgentPermissions.EmailOnly(SupportAgent.AgentName),
-                new FakeOutbox(TimeProvider.System),
+                new InMemoryOutbox(TimeProvider.System),
                 judge,
                 new PublishPolicyOptions(SupportAgent.AgentName, judgeTimeout));
 

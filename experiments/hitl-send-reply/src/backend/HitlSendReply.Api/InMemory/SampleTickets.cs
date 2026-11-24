@@ -1,6 +1,6 @@
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.InMemory;
 
 /// <summary>
 /// Fictional data used by the demo, the tests and the evaluation sets. Same orders in both

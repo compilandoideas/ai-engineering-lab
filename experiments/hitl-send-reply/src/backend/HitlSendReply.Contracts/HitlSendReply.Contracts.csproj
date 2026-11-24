@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The HTTP contract between the UI and the Agent API. No dependency on the system: a client
+       built on it never sees the agent, the policy or the judge. The OpenAPI document in
+       contracts/openapi-v1.json is the language-neutral version of the same contract. -->
+</Project>

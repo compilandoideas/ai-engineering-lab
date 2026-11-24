@@ -2,7 +2,7 @@ using System.Diagnostics;
 using HitlSendReply.Judge;
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Tests.Fakes;
 
 /// <summary>Never answers; used to prove that a timeout escalates.</summary>
 public sealed class HangingJudge : IReplyJudge

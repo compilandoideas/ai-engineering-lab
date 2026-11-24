@@ -1,6 +1,6 @@
 using HitlSendReply.Tickets;
 
-namespace HitlSendReply.Lab.Fakes;
+namespace HitlSendReply.Api.InMemory;
 
 public sealed class InMemoryTicketStore(IEnumerable<Ticket> tickets) : ITicketStore
 {
