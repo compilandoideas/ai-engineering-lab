@@ -130,6 +130,23 @@ public sealed class MailboxServiceTests : IAsyncLifetime
     }
 
     [DockerFact]
+    public async Task A_run_the_api_forgot_keeps_its_status_and_says_why()
+    {
+        _runs.Status = EmailStatus.AwaitingReview;
+        await using (var db = NewDb())
+        {
+            await Service(db).SubmitAsync(Compose(), CancellationToken.None);
+        }
+
+        _runs.Status = null; // the API restarted
+        await using var list = NewDb();
+        var row = Assert.Single((await Service(list).ListAsync(new EmailQuery(null, null, false, 0, 10), CancellationToken.None)).Items);
+
+        Assert.Equal(EmailStatus.AwaitingReview, row.Status);
+        Assert.Equal(MailboxService.RunGone, row.Detail);
+    }
+
+    [DockerFact]
     public async Task Listing_searches_sorts_and_pages_on_the_server()
     {
         await using var db = NewDb();

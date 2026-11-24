@@ -22,3 +22,16 @@
 .app-bar {
     border-bottom: 1px solid var(--mud-palette-lines-default);
 }
+
+.top-link {
+    width: auto;
+}
+
+.top-link .mud-nav-link {
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}

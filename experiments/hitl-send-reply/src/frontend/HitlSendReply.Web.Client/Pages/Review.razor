@@ -1,4 +1,5 @@
 @page "/"
+@page "/runs/{RunId}"
 @inject AgentApiClient Api
 
 <PageTitle>HITL send_reply</PageTitle>
@@ -129,6 +130,9 @@
 @code {
     [CascadingParameter] public Labels Text { get; set; } = Labels.En;
 
+    /// <summary>Set when the review is opened from the inbox: the run an email started.</summary>
+    [Parameter] public string? RunId { get; set; }
+
     private RunMode _mode = RunMode.Scenario;
     private int _scenario = 1;
     private string _ticketId = "T-1002";
@@ -142,7 +146,10 @@
 
     private ScenarioDto? SelectedScenario => _scenarios.FirstOrDefault(s => s.Number == _scenario);
 
-    private TicketDto? Ticket => _tickets.FirstOrDefault(t => t.Id == _run?.TicketId);
+    // Ids repeat across the two sample sets: prefer the one whose address the run is talking to.
+    private TicketDto? Ticket => _tickets.Where(t => t.Id == _run?.TicketId)
+        .OrderByDescending(t => _run!.PendingReviews.Any(p => p.Recipient == t.CustomerAddress) || _run.Sent.Any(x => x.Recipient == t.CustomerAddress))
+        .FirstOrDefault();
 
     private PendingReviewDto? Pending => _run?.PendingReviews.FirstOrDefault();
 
@@ -158,17 +165,22 @@
     // The language picks the tickets and the scenarios, so a change reloads them.
     protected override async Task OnParametersSetAsync()
     {
-        if (_loadedLang == Text.Code)
+        if (_loadedLang != Text.Code)
         {
-            return;
+            _loadedLang = Text.Code;
+            _run = null;
+            _error = null;
+            _scenarios = await Api.ListScenariosAsync(Text.Code);
+            _liveMessage = _scenarios.FirstOrDefault(s => s.TicketId == _ticketId)?.CustomerMessage;
         }
 
-        _loadedLang = Text.Code;
-        _run = null;
-        _error = null;
-        _scenarios = await Api.ListScenariosAsync(Text.Code);
-        _tickets = await Api.ListTicketsAsync(Text.Code);
-        _liveMessage = _scenarios.FirstOrDefault(s => s.TicketId == _ticketId)?.CustomerMessage;
+        if (RunId is not null && _run?.RunId != RunId)
+        {
+            await CallAsync(() => Api.GetRunAsync(RunId));
+        }
+
+        // An email's ticket may be in either sample set; the run's ticket is looked up in both.
+        _tickets = [.. await Api.ListTicketsAsync(Text.Code), .. await Api.ListTicketsAsync(Text.Code == "es" ? "en" : "es")];
     }
 
     private Task StartAsync() => CallAsync(() => Api.StartRunAsync(

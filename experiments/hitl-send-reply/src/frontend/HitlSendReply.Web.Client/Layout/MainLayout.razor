@@ -7,7 +7,9 @@
 
 <MudLayout>
     <MudAppBar Elevation="0" Dense="true" Class="app-bar">
-        <MudText Typo="Typo.h6">HITL send_reply</MudText>
+        <MudText Typo="Typo.h6" Class="mr-6 d-none d-sm-flex">HITL send_reply</MudText>
+        <MudNavLink Href="" Match="NavLinkMatch.All" Class="top-link" data-testid="nav-review">@Text.NavReview</MudNavLink>
+        <MudNavLink Href="inbox" Class="top-link" data-testid="nav-inbox">@Text.NavInbox</MudNavLink>
         <MudSpacer />
         <MudToggleGroup T="string" @bind-Value="_lang" Size="Size.Small" Outlined="true" data-testid="lang">
             <MudToggleItem Value="@("en")" Text="EN" />

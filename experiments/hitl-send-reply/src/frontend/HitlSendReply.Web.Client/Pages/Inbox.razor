@@ -1,0 +1,97 @@
+@page "/inbox"
+@implements IAsyncDisposable
+@inject MailboxClient Mailbox
+@inject IDialogService Dialogs
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>@Text.InboxTitle</PageTitle>
+
+<div class="d-flex flex-wrap align-center gap-4 mb-6">
+    <div class="flex-grow-1">
+        <MudText Typo="Typo.h4" GutterBottom="true">@Text.InboxTitle</MudText>
+        <MudText Typo="Typo.body1" Class="mud-text-secondary">@Text.InboxSubtitle</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
+               Disabled="_sending" OnClick="ComposeAsync" data-testid="compose">@Text.Compose</MudButton>
+</div>
+
+@if (_sending)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+}
+
+<InboxGrid @ref="_grid" Text="Text" OnOpen="Open" />
+
+@code {
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    private InboxGrid _grid = default!;
+    private bool _sending;
+    private readonly CancellationTokenSource _stop = new();
+
+    // While a run on the page is still moving, the grid reloads every 2 s. No SignalR needed.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ = PollAsync();
+        }
+    }
+
+    private async Task PollAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(_stop.Token))
+            {
+                if (_grid.HasRowsInProgress && !_sending)
+                {
+                    await InvokeAsync(_grid.ReloadAsync);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Page closed.
+        }
+    }
+
+    private async Task ComposeAsync()
+    {
+        var dialog = await Dialogs.ShowAsync<ComposeEmailDialog>(Text.Compose,
+            new DialogParameters<ComposeEmailDialog> { { d => d.Text, Text } },
+            new DialogOptions { MaxWidth = MaxWidth.Medium, CloseOnEscapeKey = true });
+        if (await dialog.Result is not { Canceled: false, Data: ComposeEmailRequest request })
+        {
+            return;
+        }
+
+        _sending = true;
+        StateHasChanged();
+        try
+        {
+            var row = await Mailbox.SubmitAsync(request);
+            Snackbar.Add($"{Text.EmailSaved}: {row?.Status}", row?.Status == EmailStatus.NotifyFailed ? Severity.Warning : Severity.Success);
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _sending = false;
+        }
+
+        await _grid.ReloadAsync();
+    }
+
+    private void Open(EmailRowDto row) => Navigation.NavigateTo($"runs/{row.RunId}");
+
+    public async ValueTask DisposeAsync()
+    {
+        await _stop.CancelAsync();
+        _stop.Dispose();
+    }
+}

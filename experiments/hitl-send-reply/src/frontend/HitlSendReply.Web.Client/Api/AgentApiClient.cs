@@ -15,6 +15,9 @@ public sealed class AgentApiClient(HttpClient http)
     public async Task<IReadOnlyList<TicketDto>> ListTicketsAsync(string lang, CancellationToken cancellationToken = default) =>
         await http.GetFromJsonAsync<List<TicketDto>>($"api/tickets?lang={lang}", cancellationToken) ?? [];
 
+    public async Task<ApiResult<RunDto>> GetRunAsync(string runId, CancellationToken cancellationToken = default) =>
+        await ReadAsync<RunDto>(await http.GetAsync($"api/runs/{runId}", cancellationToken), cancellationToken);
+
     public async Task<ApiResult<RunDto>> StartRunAsync(StartRunRequest request, CancellationToken cancellationToken = default) =>
         await ReadAsync<RunDto>(await http.PostAsJsonAsync("api/runs", request, cancellationToken), cancellationToken);
 

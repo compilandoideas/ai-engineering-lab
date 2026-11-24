@@ -13,6 +13,9 @@ public sealed partial class MailboxService(
 {
     private static readonly EmailStatus[] InProgress = [EmailStatus.Notified, EmailStatus.AwaitingReview];
 
+    /// <summary>The Agent API keeps runs in memory: after it restarts, older runs are gone.</summary>
+    public const string RunGone = "The Agent API no longer has this run (it keeps runs in memory and was restarted).";
+
     public async Task<EmailRowDto> SubmitAsync(ComposeEmailRequest request, CancellationToken cancellationToken)
     {
         var email = new InboundEmail
@@ -121,13 +124,19 @@ public sealed partial class MailboxService(
     private async Task RefreshAsync(IEnumerable<InboundEmail> emails, CancellationToken cancellationToken)
     {
         var changed = false;
-        foreach (var email in emails.Where(e => e.RunId is not null && InProgress.Contains(e.Status)))
+        foreach (var email in emails.Where(e => e.RunId is not null && InProgress.Contains(e.Status) && e.Detail != RunGone))
         {
             try
             {
-                if (await runs.ReadAsync(email.RunId!, cancellationToken) is { } status && status != email.Status)
+                var status = await runs.ReadAsync(email.RunId!, cancellationToken);
+                if (status is null && email.Detail != RunGone)
                 {
-                    email.Status = status;
+                    email.Detail = RunGone;
+                    changed = true;
+                }
+                else if (status is not null && status != email.Status)
+                {
+                    email.Status = status.Value;
                     changed = true;
                 }
             }

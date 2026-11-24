@@ -1,0 +1,14 @@
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="ColorOf(Status)" data-testid="email-status">@Status</MudChip>
+
+@code {
+    [Parameter, EditorRequired] public EmailStatus Status { get; set; }
+
+    private static Color ColorOf(EmailStatus status) => status switch
+    {
+        EmailStatus.Sent => Color.Success,
+        EmailStatus.AwaitingReview => Color.Warning,
+        EmailStatus.NotifyFailed or EmailStatus.Blocked => Color.Error,
+        EmailStatus.Unmatched => Color.Default,
+        _ => Color.Info,
+    };
+}

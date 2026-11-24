@@ -25,6 +25,7 @@ More: [Design decisions](#design-decisions) · [Measuring the judge](#measuring-
 4. `src/backend/HitlSendReply/Policy/PublishPolicy.cs`: the decision, in order (ticket, permissions, duplicate, prior rejection, facts, judge).
 5. `src/backend/HitlSendReply/Judge/LlmReplyJudge.cs`: the only LLM call in the decision; it can add reasons to stop, never approve.
 6. `src/frontend/HitlSendReply.Web.Client/Pages/Review.razor`: the review screen, built only on the HTTP contract.
+7. `src/backend/HitlSendReply.Api/Inbound/InboundEmailHandler.cs` and `src/frontend/HitlSendReply.Web/Mailbox/MailboxService.cs`: how an email becomes a run (see [How the work arrives](#how-the-work-arrives)).
 
 A support agent drafts replies and calls one tool, `send_reply(ticketId, text)`. The same tool can
 send a harmless status update or a refund promise the company never approved. This experiment
@@ -35,7 +36,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Core minimal API, a Blazor Web App (WebAssembly, MudBlazor) behind a YARP forwarder, and xUnit.
 Fictional data in **English and Spanish**, scripted model for tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (136/136 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (155/155 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -300,9 +301,10 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (136 passed) and
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (155 passed) and
 [`evidence/screenshots/web/`](evidence/screenshots/web/), saved by `scripts/smoke.mjs`, which runs
-scenarios 1 and 2 through the web screen in a real browser.
+scenarios 1 and 2 through the web screen in a real browser, then an email through the inbox to
+an approved reply.
 
 ## Run it
 
@@ -315,12 +317,13 @@ because the AppHost starts Postgres in a container. Node.js only for the smoke t
 brew install --cask dotnet-sdk        # or the installer from https://dotnet.microsoft.com/download
 dotnet --version                      # 10.x
 git clone <this repo> && cd ai-engineering-lab/experiments/hitl-send-reply
-dotnet test
+dotnet test                           # the Mailbox tests start Postgres with Testcontainers (Docker)
 dotnet run --project HitlSendReply.AppHost   # dashboard URL with its login token is printed here
 ```
 
 The Aspire dashboard shows postgres, api and web; the Web app is at `http://localhost:5090`. Pick a scenario and press Run. Scenario 2 stops for you: approve it,
-or write a reason and reject it. EN/ES and light/dark are in the top bar. The API contract is at
+or write a reason and reject it. Inbox: New email from `li.wang@example.com` → the row shows
+`AwaitingReview` → click it to review. EN/ES and light/dark are in the top bar. The API contract is at
 `http://localhost:5080/openapi/v1.json`.
 
 In Rider: run the `http` profile of `HitlSendReply.AppHost`; with Rider's Aspire plugin, debugging
@@ -537,8 +540,50 @@ list problem.
 - **"Edit" is not native.** The reviewer approves or rejects with a reason; the agent rewrites.
 - **The judge can be wrong both ways.** A false negative only ships if every verifiable check also
   passed.
-- In-memory stores and outbox; runs live in the API's memory and are lost on restart. No auth
+- In-memory stores and outbox; runs live in the API's memory and are lost on restart (the inbox
+  in Postgres survives and marks those rows). No auth
   (see decision 11). Not production code.
+
+## How the work arrives
+
+The Inbox page simulates an email provider. A person writes an email as a customer would
+(From, a fixed To, Subject, Message), and the Web server does what an inbound-email webhook
+integration does:
+
+```
+New email (MudDialog) ─► Web server: save InboundEmail in Postgres (status Received)
+                              │
+                              ▼  IInboundEmailNotifier
+                         now:   POST /api/inbound-emails  { emailId, from, subject, body, receivedAt }
+                         later: publish to a queue; its consumer calls the same InboundEmailHandler
+                              │
+                              ▼  Agent API
+                         match the ticket (sender address, else "T-1002" in the subject)
+                         start a run on that ticket ─► policy ─► auto-send / human / block
+                              │
+                              ▼
+Inbox grid (MudDataGrid, server paging) shows the run: AwaitingReview ─► click ─► review ─► Sent
+```
+
+- **Save first, then notify.** If the Agent API cannot be reached, the email stays in the inbox as
+  `NotifyFailed` with the error, and Retry hands it over again. It is never lost.
+- **Idempotent by email id.** A provider (or a queue) that delivers twice starts one run; a retry
+  after a timeout joins the run already in flight.
+- **The reply goes to the ticket, not to the email.** A forged From with a ticket id in the
+  subject starts a run on that ticket, and the draft is still addressed to the ticket's customer
+  (`A_forged_sender_cannot_change_who_receives_the_reply`).
+- **Without a model key**, the designed scenario for the matched ticket plays the agent, so the
+  whole flow works offline. With a key, the real agent and judge answer.
+- **Rows follow the run.** While a row is in progress the page reloads every 2 seconds (no
+  SignalR needed). The API keeps runs in memory: after it restarts, older rows keep their last
+  status and say why.
+
+Today the webhook waits for the run to start. When the API is down, the person waits up to 65
+seconds before the email shows `NotifyFailed`, and a real model that needs more than 30 seconds
+per attempt fails the call. A queue (or a webhook that answers 202 and starts the run in the
+background) removes the wait; only `IInboundEmailNotifier` and the API's endpoint change.
+
+![Inbox with an email waiting for review](evidence/screenshots/web/inbox-awaiting-1440-light.png)
 
 ## The review screen
 
@@ -568,9 +613,12 @@ src/backend/HitlSendReply.Api/    the Agent API: never referenced by the system
   InMemory/     outbox, audit log, review history, sample tickets
   Live/         real model settings
 src/backend/HitlSendReply.Evals/  judge measurement over data/drafts.<lang>.jsonl and heldout/
+src/backend/HitlSendReply.Api/Inbound/    the inbound-email webhook: ticket matching, idempotent run start
 src/frontend/HitlSendReply.Web/        serves the client, forwards /api with YARP (future BFF)
-src/frontend/HitlSendReply.Web.Client/ the screen: Pages/, Components/, Api/AgentApiClient, Localization/
-tests/HitlSendReply.Tests/        136 tests, one folder per area (scenario and dataset tests run in EN and ES)
+  Mailbox/      simulated inbox: InboundEmail, MailboxDbContext + migration, webhook notifier, endpoints
+src/frontend/HitlSendReply.Web.Client/ the screens: Pages/ (Review, Inbox), Components/, Api/, Mailbox/, Localization/
+tests/HitlSendReply.Tests/        155 tests, one folder per area (scenario and dataset tests run in EN and ES;
+                                  Mailbox/ runs against Postgres in Testcontainers and needs Docker)
 HitlSendReply.AppHost/            Aspire: postgres (database "mailbox"), api, web
 HitlSendReply.ServiceDefaults/    telemetry, /health and /alive, service discovery, resilience
 scripts/                          smoke.mjs (browser smoke test), check-readme-paths.sh

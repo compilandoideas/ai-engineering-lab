@@ -1,6 +1,7 @@
 // Smoke test of the Web app through a real browser. Needs the app running (dotnet run --project HitlSendReply.AppHost).
-// Runs scenario 1 (auto-sent) and scenario 2 (stopped for a human, then approved) and saves
-// screenshots at 1440 and 390 px, light and dark, to evidence/screenshots/web/.
+// Runs scenario 1 (auto-sent) and scenario 2 (stopped for a human, then approved), then sends an
+// email from the inbox, opens its review from the row, approves it and waits for the row to show
+// Sent. Saves screenshots at 1440 and 390 px, light and dark, to evidence/screenshots/web/.
 // Usage: node scripts/smoke.mjs [baseUrl]
 // Playwright, from the experiment folder: npm install --no-save playwright && npx playwright install chromium
 import { createRequire } from 'node:module';
@@ -69,6 +70,38 @@ if (!/Sent/.test(result2)) { fail(`scenario 2 should be sent after approval, got
 const audit = await byId('audit').innerText();
 if (!/human-approved/.test(audit) || !/\bsent\b/.test(audit)) { fail('audit should show human-approved then sent'); }
 await shot('scenario2-approved-1440-light');
+
+// Inbox: an email from a customer becomes a run; the person approves it from the row.
+const subject = `Damaged package ${Date.now()}`;
+await page.goto(`${baseUrl}/inbox`);
+await byId('compose').click();
+await page.locator('[data-testid="compose-from"] input, input[data-testid="compose-from"]').first().fill('li.wang@example.com');
+await page.keyboard.press('Tab');
+await page.locator('[data-testid="compose-subject"] input, input[data-testid="compose-subject"]').first().fill(subject);
+await page.locator('[data-testid="compose-body"] textarea, textarea[data-testid="compose-body"]').first().fill('The package arrived damaged. I want my money back.');
+await shot('inbox-compose-1440-light');
+await byId('compose-send').click();
+const row = page.locator('.mud-table-row', { hasText: subject });
+await row.locator('[data-testid="email-status"]', { hasText: 'AwaitingReview' }).waitFor({ timeout: 90000 });
+await page.locator('.mud-snackbar').waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
+await shot('inbox-awaiting-1440-light');
+await setDark(true);
+await shot('inbox-awaiting-1440-dark');
+await page.setViewportSize({ width: 390, height: 844 });
+await shot('inbox-awaiting-390-dark');
+await setDark(false);
+await shot('inbox-awaiting-390-light');
+await page.setViewportSize({ width: 1440, height: 1000 });
+
+await row.click();
+await byId('approve').waitFor();
+if ((await byId('ticket-recipient').innerText()) !== 'li.wang@example.com') { fail('the review should show the ticket address'); }
+await byId('approve').click();
+await byId('result').waitFor();
+await byId('nav-inbox').click();
+await page.locator('.mud-table-row', { hasText: subject }).locator('[data-testid="email-status"]', { hasText: 'Sent' }).waitFor({ timeout: 15000 })
+  .catch(() => fail('the row should show Sent after the approval'));
+await shot('inbox-sent-1440-light');
 
 await browser.close();
 console.log(process.exitCode ? 'smoke: FAILED' : `smoke: OK (screenshots in ${path.relative(process.cwd(), out)})`);

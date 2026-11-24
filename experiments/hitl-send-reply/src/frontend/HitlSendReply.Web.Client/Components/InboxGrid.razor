@@ -1,0 +1,91 @@
+@* The inbox: server-side search, sort and paging over the Web server's mailbox. A row with a
+   run opens its review; a row that could not be handed to the agent offers Retry. *@
+@inject MailboxClient Mailbox
+
+<MudDataGrid @ref="_grid" T="EmailRowDto" ServerData="LoadAsync" MultiSelection="true" Hover="true" Dense="true"
+             RowClick="OnRowClick" RowClassFunc="@((row, _) => row.RunId is null || row.Detail is not null ? "" : "cursor-pointer")"
+             Elevation="0" Outlined="true" SortMode="SortMode.Single" data-testid="inbox">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">@Text.NavInbox</MudText>
+        <MudSpacer />
+        <MudTextField T="string" Value="_search" ValueChanged="OnSearchAsync" Placeholder="@Text.Search" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Immediate="true" Margin="Margin.Dense"
+                      Variant="Variant.Outlined" Class="mt-0" Style="max-width: 320px" data-testid="inbox-search" />
+    </ToolBarContent>
+    <Columns>
+        <SelectColumn T="EmailRowDto" />
+        <PropertyColumn Property="x => x.From" Title="@($"{Text.From} / {Text.Subject}")">
+            <CellTemplate>
+                <div>
+                    <MudText Typo="Typo.body2"><b>@context.Item.From</b></MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@context.Item.Subject</MudText>
+                </div>
+            </CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.TicketId" Title="@Text.Ticket" Sortable="false" />
+        <PropertyColumn Property="x => x.ReceivedAt" Title="@Text.Received">
+            <CellTemplate>@context.Item.ReceivedAt.ToLocalTime().ToString("dd MMM HH:mm:ss")</CellTemplate>
+        </PropertyColumn>
+        <PropertyColumn Property="x => x.Status" Title="@Text.Status">
+            <CellTemplate>
+                <EmailStatusChip Status="context.Item.Status" />
+                @if (context.Item.Detail is { Length: > 0 } detail)
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block">@detail</MudText>
+                }
+            </CellTemplate>
+        </PropertyColumn>
+        <TemplateColumn Sortable="false">
+            <CellTemplate>
+                @if (context.Item.Status is EmailStatus.NotifyFailed or EmailStatus.Received)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh"
+                               OnClick="() => RetryAsync(context.Item)" data-testid="retry">@Text.Retry</MudButton>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+    <NoRecordsContent>
+        <MudText Class="mud-text-secondary">@Text.NoEmails</MudText>
+    </NoRecordsContent>
+    <PagerContent>
+        <MudDataGridPager T="EmailRowDto" PageSizeOptions="[5, 10, 25]" RowsPerPageString="@Text.RowsPerPage" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private MudDataGrid<EmailRowDto> _grid = default!;
+    private string? _search;
+
+    [Parameter] public Labels Text { get; set; } = Labels.En;
+
+    [Parameter] public EventCallback<EmailRowDto> OnOpen { get; set; }
+
+    /// <summary>True while a row on the page is still moving (handed over, waiting for a person).</summary>
+    public bool HasRowsInProgress { get; private set; }
+
+    public Task ReloadAsync() => _grid.ReloadServerData();
+
+    private async Task<GridData<EmailRowDto>> LoadAsync(GridState<EmailRowDto> state, CancellationToken cancellationToken)
+    {
+        var sort = state.SortDefinitions.FirstOrDefault();
+        var page = await Mailbox.ListAsync(_search, sort?.SortBy, sort?.Descending ?? true, state.Page, state.PageSize, cancellationToken);
+        HasRowsInProgress = page.Items.Any(e => (e.Status is EmailStatus.Notified or EmailStatus.AwaitingReview) && e.Detail is null);
+        return new GridData<EmailRowDto> { Items = page.Items, TotalItems = page.Total };
+    }
+
+    private async Task OnSearchAsync(string? value)
+    {
+        _search = value;
+        await _grid.ReloadServerData();
+    }
+
+    private Task OnRowClick(DataGridRowClickEventArgs<EmailRowDto> args) =>
+        args.Item.RunId is null || args.Item.Detail is not null ? Task.CompletedTask : OnOpen.InvokeAsync(args.Item);
+
+    private async Task RetryAsync(EmailRowDto row)
+    {
+        await Mailbox.RetryAsync(row.Id);
+        await _grid.ReloadServerData();
+    }
+}
