@@ -69,6 +69,29 @@
         }
       }
     },
+    "/api/inbound-emails": {
+      "post": {
+        "tags": [
+          "Inbound"
+        ],
+        "operationId": "ReceiveInboundEmail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboundEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/runs": {
       "post": {
         "tags": [
@@ -159,6 +182,34 @@
   },
   "components": {
     "schemas": {
+      "InboundEmailRequest": {
+        "required": [
+          "emailId",
+          "from",
+          "subject",
+          "body",
+          "receivedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "emailId": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "OrderDto": {
         "required": [
           "id",
@@ -339,6 +390,9 @@
   "tags": [
     {
       "name": "Catalog"
+    },
+    {
+      "name": "Inbound"
     },
     {
       "name": "Runs"

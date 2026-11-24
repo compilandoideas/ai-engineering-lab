@@ -60,6 +60,16 @@ public class LayeringTests
     }
 
     [Fact]
+    public void The_agent_api_knows_nothing_about_the_mailbox_storage_or_the_ui()
+    {
+        var references = typeof(Pipeline).Assembly.GetReferencedAssemblies().Select(a => a.Name!).ToList();
+
+        Assert.DoesNotContain(references, r => r.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal)
+            || r.StartsWith("Npgsql", StringComparison.Ordinal) || r.StartsWith("HitlSendReply.Web", StringComparison.Ordinal)
+            || r == "MudBlazor");
+    }
+
+    [Fact]
     public void The_client_is_built_on_the_contract()
     {
         var references = typeof(AgentApiClient).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList();
