@@ -36,7 +36,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Core minimal API, a Blazor Web App (WebAssembly, MudBlazor) behind a YARP forwarder, and xUnit.
 Fictional data in **English and Spanish**, scripted model for tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (155/155 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (159/159 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -301,7 +301,7 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (155 passed) and
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (159 passed) and
 [`evidence/screenshots/web/`](evidence/screenshots/web/), saved by `scripts/smoke.mjs`, which runs
 scenarios 1 and 2 through the web screen in a real browser, then an email through the inbox to
 an approved reply.
@@ -559,7 +559,8 @@ New email (MudDialog) ─► Web server: save InboundEmail in Postgres (status R
                               │
                               ▼  Agent API
                          match the ticket (sender address, else "T-1002" in the subject)
-                         start a run on that ticket ─► policy ─► auto-send / human / block
+                         register a run and answer 202 at once; the agent drafts in the background
+                         (run status Starting ─► policy ─► auto-send / human / block, or Failed)
                               │
                               ▼
 Inbox grid (MudDataGrid, server paging) shows the run: AwaitingReview ─► click ─► review ─► Sent
@@ -567,8 +568,10 @@ Inbox grid (MudDataGrid, server paging) shows the run: AwaitingReview ─► cli
 
 - **Save first, then notify.** If the Agent API cannot be reached, the email stays in the inbox as
   `NotifyFailed` with the error, and Retry hands it over again. It is never lost.
-- **Idempotent by email id.** A provider (or a queue) that delivers twice starts one run; a retry
-  after a timeout joins the run already in flight.
+- **The webhook does not wait for the model.** It answers 202 as soon as the run is registered,
+  the way inbound-email providers expect, so a slow model cannot time the call out. If starting
+  fails (the model is down), the run is `Failed` with the reason and the row shows it.
+- **Idempotent by email id.** A provider (or a queue) that delivers twice starts one run.
 - **The reply goes to the ticket, not to the email.** A forged From with a ticket id in the
   subject starts a run on that ticket, and the draft is still addressed to the ticket's customer
   (`A_forged_sender_cannot_change_who_receives_the_reply`).
@@ -578,10 +581,10 @@ Inbox grid (MudDataGrid, server paging) shows the run: AwaitingReview ─► cli
   SignalR needed). The API keeps runs in memory: after it restarts, older rows keep their last
   status and say why.
 
-Today the webhook waits for the run to start. When the API is down, the person waits up to 65
-seconds before the email shows `NotifyFailed`, and a real model that needs more than 30 seconds
-per attempt fails the call. A queue (or a webhook that answers 202 and starts the run in the
-background) removes the wait; only `IInboundEmailNotifier` and the API's endpoint change.
+Because the webhook answers at once, the Web server gives it 5 seconds and one retry: when the
+API is down the email shows `NotifyFailed` after about 11 seconds. The background start lives in
+the API process; a queue is the next step when runs must survive a restart, and only
+`IInboundEmailNotifier` and the consumer change.
 
 ![Inbox with an email waiting for review](evidence/screenshots/web/inbox-awaiting-1440-light.png)
 
@@ -617,8 +620,8 @@ src/backend/HitlSendReply.Api/Inbound/    the inbound-email webhook: ticket matc
 src/frontend/HitlSendReply.Web/        serves the client, forwards /api with YARP (future BFF)
   Mailbox/      simulated inbox: InboundEmail, MailboxDbContext + migration, webhook notifier, endpoints
 src/frontend/HitlSendReply.Web.Client/ the screens: Pages/ (Review, Inbox), Components/, Api/, Mailbox/, Localization/
-tests/HitlSendReply.Tests/        155 tests, one folder per area (scenario and dataset tests run in EN and ES;
-                                  Mailbox/ runs against Postgres in Testcontainers and needs Docker)
+tests/HitlSendReply.Tests/        159 tests, one folder per area (scenario and dataset tests run in EN and ES;
+                                  Mailbox/ runs against Postgres in Testcontainers; skipped, with the reason, without Docker)
 HitlSendReply.AppHost/            Aspire: postgres (database "mailbox"), api, web
 HitlSendReply.ServiceDefaults/    telemetry, /health and /alive, service discovery, resilience
 scripts/                          smoke.mjs (browser smoke test), check-readme-paths.sh

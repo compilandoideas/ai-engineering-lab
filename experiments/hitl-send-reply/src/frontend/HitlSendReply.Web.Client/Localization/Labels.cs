@@ -52,7 +52,9 @@ public sealed record Labels(
     string NoEmails,
     string RowsPerPage,
     string EmailSaved,
-    string OpenRun)
+    string OpenRun,
+    string Starting,
+    string RunFailed)
 {
     public static readonly Labels En = new(
         Code: "en",
@@ -105,7 +107,9 @@ public sealed record Labels(
         NoEmails: "No emails yet. Write one with New email.",
         RowsPerPage: "Rows per page",
         EmailSaved: "Email saved",
-        OpenRun: "Open review");
+        OpenRun: "Open review",
+        Starting: "The agent is drafting a reply. This page updates when it is ready.",
+        RunFailed: "The run could not start:");
 
     public static readonly Labels Es = new(
         Code: "es",
@@ -158,5 +162,7 @@ public sealed record Labels(
         NoEmails: "Aún no hay correos. Escribe uno con Nuevo correo.",
         RowsPerPage: "Filas por página",
         EmailSaved: "Correo guardado",
-        OpenRun: "Abrir revisión");
+        OpenRun: "Abrir revisión",
+        Starting: "El agente está redactando una respuesta. Esta página se actualiza cuando esté lista.",
+        RunFailed: "La corrida no pudo arrancar:");
 }

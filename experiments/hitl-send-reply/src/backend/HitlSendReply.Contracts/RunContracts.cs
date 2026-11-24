@@ -6,7 +6,7 @@ namespace HitlSendReply.Contracts;
 public enum RunMode { Scenario, Live }
 
 [JsonConverter(typeof(JsonStringEnumConverter<RunStatus>))]
-public enum RunStatus { AwaitingReview, Completed }
+public enum RunStatus { AwaitingReview, Completed, Starting, Failed }
 
 /// <summary>Start a run: a designed scenario (scripted model and judge, no key) or the real model on a ticket.</summary>
 public sealed record StartRunRequest(RunMode Mode, int? Scenario = null, string? TicketId = null, string? CustomerMessage = null, string Lang = "en");
@@ -36,4 +36,5 @@ public sealed record RunDto(
     IReadOnlyList<PendingReviewDto> PendingReviews,
     IReadOnlyList<SentReplyDto> Sent,
     IReadOnlyList<AuditEntryDto> Audit,
-    string AgentReply);
+    string AgentReply,
+    string? Error = null);

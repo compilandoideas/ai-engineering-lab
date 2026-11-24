@@ -25,13 +25,13 @@ builder.Services.AddHttpClient<IInboundEmailNotifier, WebhookInboundEmailNotifie
     .RemoveAllResilienceHandlers()
     .AddStandardResilienceHandler(options =>
     {
-        // Starting a run with a real model takes longer than the default 10 s attempt. One retry
-        // (safe: the API is idempotent by EmailId) and then the email is kept as NotifyFailed.
-        // The webhook waits for the run to start; a queue (or a 202 webhook) removes that wait.
-        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(30);
+        // The webhook answers 202 as soon as the run is registered (the agent drafts in the
+        // background), so a slow answer means the API is not there: fail fast, keep the email as
+        // NotifyFailed and let Retry hand it over. One retry is safe: the API is idempotent by EmailId.
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
         options.Retry.MaxRetryAttempts = 1;
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(60);
-        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(65);
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(10);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(12);
     });
 #pragma warning restore EXTEXP0001
 

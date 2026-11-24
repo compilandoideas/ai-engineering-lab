@@ -11,5 +11,9 @@ public enum InboundEmailStatus { Started, Unmatched, Duplicate }
 /// </summary>
 public sealed record InboundEmailRequest(string EmailId, string From, string Subject, string Body, DateTimeOffset ReceivedAt);
 
-/// <summary>Started (RunId set), Unmatched (no ticket for this email) or Duplicate (RunId of the first delivery).</summary>
+/// <summary>
+/// Started: the run is registered and starts in the background (202; read it at /api/runs/{RunId},
+/// status Starting until the agent has drafted). Unmatched: no ticket for this email. Duplicate:
+/// RunId of the first delivery.
+/// </summary>
 public sealed record InboundEmailResult(InboundEmailStatus Status, string? RunId, string? TicketId, string? Reason);

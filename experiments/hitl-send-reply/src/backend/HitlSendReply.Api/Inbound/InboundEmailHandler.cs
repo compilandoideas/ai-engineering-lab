@@ -9,42 +9,46 @@ namespace HitlSendReply.Api.Inbound;
 
 /// <summary>
 /// An inbound email becomes a run on its ticket. Called by the webhook today; a queue consumer
-/// would call the same method. Idempotent by EmailId: a second delivery returns the first run.
+/// would call the same method. It answers as soon as the run is registered: the agent drafts in
+/// the background, so the sender never waits for the model. Idempotent by EmailId.
 /// </summary>
-public sealed class InboundEmailHandler(RunStore runs, LiveModels live)
+public sealed partial class InboundEmailHandler(RunStore runs, LiveModels live, ILogger<InboundEmailHandler> logger)
 {
-    private readonly ConcurrentDictionary<string, Lazy<Task<InboundEmailResult>>> _handled = new();
+    private readonly ConcurrentDictionary<string, InboundEmailResult> _handled = new();
+    private readonly Lock _gate = new();
 
-    public async Task<InboundEmailResult> HandleAsync(InboundEmailRequest email, CancellationToken cancellationToken)
+    /// <summary>For tests: how a ticket gets its pipeline. Defaults to the live model or the designed scenario.</summary>
+    internal Func<Ticket, (Pipeline Pipeline, RunMode Mode, int? Scenario)>? PipelineFactory { get; init; }
+
+    public InboundEmailResult Handle(InboundEmailRequest email)
     {
-        // Once accepted, the run does not depend on the caller staying connected: a client timeout and
-        // retry joins the same run instead of cancelling it.
-        var first = new Lazy<Task<InboundEmailResult>>(() => StartAsync(email, CancellationToken.None));
-        var handling = _handled.GetOrAdd(email.EmailId, first);
-        try
+        // Registering is quick and synchronous, so one lock makes "first delivery wins" exact.
+        lock (_gate)
         {
-            var result = await handling.Value;
-            return ReferenceEquals(handling, first) ? result : result with { Status = InboundEmailStatus.Duplicate };
-        }
-        catch
-        {
-            // A failed attempt did not start a run: forget it so the sender can retry.
-            _handled.TryRemove(new KeyValuePair<string, Lazy<Task<InboundEmailResult>>>(email.EmailId, handling));
-            throw;
+            if (_handled.TryGetValue(email.EmailId, out var first))
+            {
+                return first with { Status = InboundEmailStatus.Duplicate };
+            }
+
+            var result = Register(email);
+            _handled[email.EmailId] = result;
+            return result;
         }
     }
 
-    private async Task<InboundEmailResult> StartAsync(InboundEmailRequest email, CancellationToken cancellationToken)
+    private InboundEmailResult Register(InboundEmailRequest email)
     {
         if (TicketMatcher.Match(email.From, email.Subject) is not { } ticket)
         {
             return new InboundEmailResult(InboundEmailStatus.Unmatched, null, null, "No ticket for this sender or subject.");
         }
 
-        var (pipeline, mode, scenario) = PipelineFor(ticket);
-        var run = await pipeline.Runner.StartAsync(ticket.Id, email.Body, cancellationToken);
-        var entry = new RunEntry(Guid.NewGuid().ToString("n"), mode, scenario, email.Body, pipeline, run);
+        var (pipeline, mode, scenario) = (PipelineFactory ?? PipelineFor)(ticket);
+        var entry = new RunEntry(Guid.NewGuid().ToString("n"), mode, scenario, ticket.Id, email.Body, pipeline);
         runs.Add(entry);
+        entry.StartInBackground(
+            () => pipeline.Runner.StartAsync(ticket.Id, email.Body, CancellationToken.None),
+            ex => LogStartFailed(entry.Id, ticket.Id, ex));
         return new InboundEmailResult(InboundEmailStatus.Started, entry.Id, ticket.Id, null);
     }
 
@@ -63,4 +67,7 @@ public sealed class InboundEmailHandler(RunStore runs, LiveModels live)
         var (pipeline, _) = ScenarioHarness.Build(scenario, approver: null);
         return (pipeline, RunMode.Scenario, scenario.Number);
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Run {RunId} for ticket {TicketId} failed to start")]
+    private partial void LogStartFailed(string runId, string ticketId, Exception exception);
 }

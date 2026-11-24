@@ -51,7 +51,7 @@ public static class RunEndpoints
         }
 
         var run = await pipeline.Runner.StartAsync(ticketId, message, cancellationToken);
-        var entry = new RunEntry(Guid.NewGuid().ToString("n"), request.Mode, request.Scenario, message, pipeline, run);
+        var entry = new RunEntry(Guid.NewGuid().ToString("n"), request.Mode, request.Scenario, ticketId, message, pipeline, run);
         store.Add(entry);
         return TypedResults.Created($"/api/runs/{entry.Id}", RunMapper.ToDto(entry));
     }
@@ -74,15 +74,21 @@ public static class RunEndpoints
         var reviewer = string.IsNullOrWhiteSpace(review.Reviewer) ? "reviewer" : review.Reviewer;
         var verdict = review.Approved ? HumanVerdict.Approve(reviewer) : HumanVerdict.Reject(reviewer, review.Reason!);
 
+        // A run still starting holds the gate while the agent drafts: answer now instead of waiting.
+        if (entry.Run is null)
+        {
+            return TypedResults.Problem(entry.Error ?? "The run is still starting: nothing to review yet.", statusCode: StatusCodes.Status409Conflict);
+        }
+
         await entry.Gate.WaitAsync(cancellationToken);
         try
         {
-            if (entry.Run.PendingReviews.All(p => p.CallId != callId))
+            if (entry.Run is not { } run || run.PendingReviews.All(p => p.CallId != callId))
             {
                 return TypedResults.Problem($"No pending review '{callId}' on this run.", statusCode: StatusCodes.Status409Conflict);
             }
 
-            await entry.Pipeline.Runner.ResumeAsync(entry.Run, callId, verdict, cancellationToken);
+            await entry.Pipeline.Runner.ResumeAsync(run, callId, verdict, cancellationToken);
             return TypedResults.Ok(RunMapper.ToDto(entry));
         }
         finally

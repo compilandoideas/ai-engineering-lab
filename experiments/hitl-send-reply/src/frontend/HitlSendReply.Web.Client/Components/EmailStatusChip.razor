@@ -7,7 +7,7 @@
     {
         EmailStatus.Sent => Color.Success,
         EmailStatus.AwaitingReview => Color.Warning,
-        EmailStatus.NotifyFailed or EmailStatus.Blocked => Color.Error,
+        EmailStatus.NotifyFailed or EmailStatus.Blocked or EmailStatus.RunFailed => Color.Error,
         EmailStatus.Unmatched => Color.Default,
         _ => Color.Info,
     };

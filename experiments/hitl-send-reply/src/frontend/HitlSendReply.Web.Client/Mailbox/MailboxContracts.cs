@@ -4,10 +4,11 @@ namespace HitlSendReply.Web.Client.Mailbox;
 
 /// <summary>
 /// Where an email is in its life: saved, handed to the agent (or not), then what the run did.
-/// AwaitingReview, Sent and Blocked are read back from the run.
+/// Notified means the agent accepted it and is drafting; AwaitingReview, Sent, Blocked and
+/// RunFailed are read back from the run.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<EmailStatus>))]
-public enum EmailStatus { Received, Notified, NotifyFailed, Unmatched, AwaitingReview, Sent, Blocked }
+public enum EmailStatus { Received, Notified, NotifyFailed, Unmatched, AwaitingReview, Sent, Blocked, RunFailed }
 
 public static class Mailbox
 {

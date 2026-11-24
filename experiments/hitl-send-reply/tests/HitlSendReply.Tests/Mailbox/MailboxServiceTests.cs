@@ -30,7 +30,13 @@ public sealed class MailboxServiceTests : IAsyncLifetime
         }
     }
 
-    public async Task DisposeAsync() => await _postgres.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        if (new DockerFactAttribute().Skip is null)
+        {
+            await _postgres.DisposeAsync();
+        }
+    }
 
     private MailboxDbContext NewDb() =>
         new(new DbContextOptionsBuilder<MailboxDbContext>().UseNpgsql(_postgres.GetConnectionString()).Options);
@@ -130,6 +136,24 @@ public sealed class MailboxServiceTests : IAsyncLifetime
     }
 
     [DockerFact]
+    public async Task A_run_that_failed_to_start_shows_why()
+    {
+        _runs.Status = EmailStatus.Notified; // accepted, the agent is still drafting
+        await using (var db = NewDb())
+        {
+            Assert.Equal(EmailStatus.Notified, (await Service(db).SubmitAsync(Compose(), CancellationToken.None)).Status);
+        }
+
+        _runs.Status = EmailStatus.RunFailed;
+        _runs.Error = "model endpoint unavailable";
+        await using var list = NewDb();
+        var row = Assert.Single((await Service(list).ListAsync(new EmailQuery(null, null, false, 0, 10), CancellationToken.None)).Items);
+
+        Assert.Equal(EmailStatus.RunFailed, row.Status);
+        Assert.Equal("model endpoint unavailable", row.Detail);
+    }
+
+    [DockerFact]
     public async Task A_run_the_api_forgot_keeps_its_status_and_says_why()
     {
         _runs.Status = EmailStatus.AwaitingReview;
@@ -184,6 +208,9 @@ public sealed class MailboxServiceTests : IAsyncLifetime
     {
         public EmailStatus? Status { get; set; } = EmailStatus.AwaitingReview;
 
-        public Task<EmailStatus?> ReadAsync(string runId, CancellationToken cancellationToken) => Task.FromResult(Status);
+        public string? Error { get; set; }
+
+        public Task<RunState?> ReadAsync(string runId, CancellationToken cancellationToken) =>
+            Task.FromResult(Status is { } status ? new RunState(status, Error) : null);
     }
 }

@@ -66,7 +66,15 @@
     <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-6" />
 }
 
-@if (_run is not null)
+@if (_run is { Status: RunStatus.Starting })
+{
+    <MudAlert Severity="Severity.Info" Class="mb-6" data-testid="starting">@Text.Starting</MudAlert>
+}
+else if (_run is { Status: RunStatus.Failed })
+{
+    <MudAlert Severity="Severity.Error" Class="mb-6" data-testid="failed">@Text.RunFailed @_run.Error</MudAlert>
+}
+else if (_run is not null)
 {
     <MudGrid Spacing="4">
         <MudItem xs="12" md="4">
@@ -177,6 +185,14 @@
         if (RunId is not null && _run?.RunId != RunId)
         {
             await CallAsync(() => Api.GetRunAsync(RunId));
+
+            // A run from an email may still be drafting: read it again until the agent is done.
+            for (var i = 0; i < 120 && _run is { Status: RunStatus.Starting }; i++)
+            {
+                StateHasChanged();
+                await Task.Delay(1000);
+                await CallAsync(() => Api.GetRunAsync(RunId));
+            }
         }
 
         // An email's ticket may be in either sample set; the run's ticket is looked up in both.

@@ -128,15 +128,16 @@ public sealed partial class MailboxService(
         {
             try
             {
-                var status = await runs.ReadAsync(email.RunId!, cancellationToken);
-                if (status is null && email.Detail != RunGone)
+                var state = await runs.ReadAsync(email.RunId!, cancellationToken);
+                if (state is null && email.Detail != RunGone)
                 {
                     email.Detail = RunGone;
                     changed = true;
                 }
-                else if (status is not null && status != email.Status)
+                else if (state is not null && (state.Status != email.Status || state.Error != email.Detail))
                 {
-                    email.Status = status.Value;
+                    email.Status = state.Status;
+                    email.Detail = state.Error;
                     changed = true;
                 }
             }
