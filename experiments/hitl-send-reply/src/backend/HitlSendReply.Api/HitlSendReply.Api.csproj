@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HitlSendReply\HitlSendReply.csproj" />
     <ProjectReference Include="..\HitlSendReply.Contracts\HitlSendReply.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\HitlSendReply.ServiceDefaults\HitlSendReply.ServiceDefaults.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />

@@ -2,8 +2,9 @@ using HitlSendReply.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
 builder.Services.AddRazorComponents().AddInteractiveWebAssemblyComponents();
-builder.Services.AddHttpForwarder();
+builder.Services.AddHttpForwarderWithServiceDiscovery();
 
 var app = builder.Build();
 
@@ -19,7 +20,10 @@ else
 app.UseAntiforgery();
 app.MapStaticAssets();
 
-// The browser only talks to this server. Every /api call is forwarded to the Agent API.
+app.MapDefaultEndpoints();
+
+// The browser only talks to this server. Every /api call is forwarded to the Agent API, found by
+// service discovery ("https+http://api": the "api" resource in the AppHost).
 // BFF later: add the user's access token here (a request transform on this forwarder) and the
 // browser never holds it. Nothing else in the client or the API changes.
 var agentApi = app.Configuration["AgentApi:BaseUrl"]

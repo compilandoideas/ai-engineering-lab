@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="HitlSendReply.AppHost/HitlSendReply.AppHost.csproj" />
+  <Project Path="HitlSendReply.ServiceDefaults/HitlSendReply.ServiceDefaults.csproj" />
   <Folder Name="/src/">
     <Project Path="src/backend/HitlSendReply/HitlSendReply.csproj" />
     <Project Path="src/backend/HitlSendReply.Api/HitlSendReply.Api.csproj" />

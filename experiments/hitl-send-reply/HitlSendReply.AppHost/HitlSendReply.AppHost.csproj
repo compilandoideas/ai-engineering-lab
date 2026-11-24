@@ -1,0 +1,16 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
+  <!-- Starts everything: Postgres (database "mailbox"), the Agent API and the Web app. Docker required. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>hitl-send-reply-apphost</UserSecretsId>
+    <!-- Dashboard and DCP come from NuGet packages, so the Aspire CLI is not required. -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);ASPIRE010</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\backend\HitlSendReply.Api\HitlSendReply.Api.csproj" />
+    <ProjectReference Include="..\src\frontend\HitlSendReply.Web\HitlSendReply.Web.csproj" />
+  </ItemGroup>
+</Project>

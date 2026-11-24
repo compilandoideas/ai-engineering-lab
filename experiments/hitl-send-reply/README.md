@@ -7,11 +7,11 @@ send, ask a human, or block. An LLM judge can only add reasons to stop, never ap
 screen shows a person exactly what is waiting and lets them approve, or reject with a reason.
 
 ```bash
-scripts/run.sh            # Agent API on :5080, Web on :5090. No API key needed for the scenarios
-open http://localhost:5090
+dotnet run --project HitlSendReply.AppHost   # Aspire: Postgres, Agent API :5080, Web :5090. Needs Docker
+open http://localhost:5090                   # no API key needed for the scenarios
 ```
 
-With a real model, set `OPENAI_API_KEY` before `scripts/run.sh` and pick "Live model" (see [Run it](#run-it)).
+With a real model, set `OPENAI_API_KEY` before starting the AppHost and pick "Live model" (see [Run it](#run-it)).
 
 **Key result** (blind set, gpt-4.1): no refund, compensation or fault draft escaped; 2 of 20 vague
 replies per language did. Counts on 40 drafts per language, labels still under human review.
@@ -44,13 +44,13 @@ Fictional data in **English and Spanish**, scripted model for tests, real model 
 
 ## Design
 
-Three processes, one direction of dependency:
+Three processes plus Postgres, started by Aspire (`HitlSendReply.AppHost`), one direction of dependency:
 
 ```
 Browser (Blazor WebAssembly)            knows only the HTTP contract (Contracts)
    │  /api/...  same origin
    ▼
-Web server (HitlSendReply.Web)          serves the client; YARP forwards /api ── the future BFF:
+Web server (HitlSendReply.Web)          serves the client; YARP forwards /api to "https+http://api" ── the future BFF:
    │  /api/...                          the access token is added here, never in the browser
    ▼
 Agent API (HitlSendReply.Api)           runs, reviews, catalog; contract in contracts/openapi-v1.json
@@ -306,7 +306,8 @@ scenarios 1 and 2 through the web screen in a real browser.
 
 ## Run it
 
-Requirements: .NET 10 SDK. Nothing else for tests and scenarios. Node.js only for the smoke test.
+Requirements: .NET 10 SDK for the tests; Docker (Docker Desktop, OrbStack or Colima) to run the app,
+because the AppHost starts Postgres in a container. Node.js only for the smoke test.
 
 **macOS**
 
@@ -315,17 +316,20 @@ brew install --cask dotnet-sdk        # or the installer from https://dotnet.mic
 dotnet --version                      # 10.x
 git clone <this repo> && cd ai-engineering-lab/experiments/hitl-send-reply
 dotnet test
-scripts/run.sh                        # Agent API http://localhost:5080, Web http://localhost:5090
+dotnet run --project HitlSendReply.AppHost   # dashboard URL with its login token is printed here
 ```
 
-Open `http://localhost:5090`, pick a scenario and press Run. Scenario 2 stops for you: approve it,
+The Aspire dashboard shows postgres, api and web; the Web app is at `http://localhost:5090`. Pick a scenario and press Run. Scenario 2 stops for you: approve it,
 or write a reason and reject it. EN/ES and light/dark are in the top bar. The API contract is at
 `http://localhost:5080/openapi/v1.json`.
 
-In Rider: run the `http` profile of `HitlSendReply.Api` and of `HitlSendReply.Web`, or create a
-Compound run configuration with both.
+In Rider: run the `http` profile of `HitlSendReply.AppHost`; with Rider's Aspire plugin, debugging
+it also debugs Api and Web.
 
-Smoke test through a real browser (with `scripts/run.sh` running):
+If Docker Hub rate-limits image pulls, take Postgres from a mirror:
+`Postgres__Registry=mirror.gcr.io dotnet run --project HitlSendReply.AppHost`.
+
+Smoke test through a real browser (with the AppHost running):
 
 ```bash
 npm install --no-save playwright && npx playwright install chromium   # from this folder
@@ -333,13 +337,13 @@ node scripts/smoke.mjs                # exit 0; screenshots in evidence/screensh
 ```
 
 **Linux (Ubuntu 24.04)**: `sudo apt-get install -y dotnet-sdk-10.0`, then the same commands.
-**Windows**: `winget install Microsoft.DotNet.SDK.10`, then the same commands (run the two
-projects with `dotnet run --project ...` instead of the shell script).
+**Windows**: `winget install Microsoft.DotNet.SDK.10` and Docker Desktop, then the same commands.
 
 ### With a real model (optional)
 
-Any OpenAI-compatible endpoint works: OpenAI, Azure OpenAI (v1 endpoint) or Ollama. The Agent API
-reads the settings from its environment; the key never goes to the browser.
+Any OpenAI-compatible endpoint works: OpenAI, Azure OpenAI (v1 endpoint) or Ollama. The AppHost
+passes these variables from its own environment to the Agent API only; the key never reaches the
+Web app or the browser.
 
 ```bash
 # OpenAI. Agent defaults to gpt-4.1-mini, judge to gpt-4.1
@@ -353,7 +357,7 @@ export LAB_LLM_ENDPOINT=http://localhost:11434/v1
 export LAB_LLM_API_KEY=ollama
 export LAB_LLM_MODEL=llama3.1:8b
 
-scripts/run.sh                        # then "Live model" on the screen: pick a ticket, write the message
+dotnet run --project HitlSendReply.AppHost   # then "Live model" on the screen: pick a ticket, write the message
 ```
 
 Without a key, a live run answers 409 and the screen says so.
@@ -567,7 +571,9 @@ src/backend/HitlSendReply.Evals/  judge measurement over data/drafts.<lang>.json
 src/frontend/HitlSendReply.Web/        serves the client, forwards /api with YARP (future BFF)
 src/frontend/HitlSendReply.Web.Client/ the screen: Pages/, Components/, Api/AgentApiClient, Localization/
 tests/HitlSendReply.Tests/        136 tests, one folder per area (scenario and dataset tests run in EN and ES)
-scripts/                          run.sh (both processes), smoke.mjs (browser smoke test)
+HitlSendReply.AppHost/            Aspire: postgres (database "mailbox"), api, web
+HitlSendReply.ServiceDefaults/    telemetry, /health and /alive, service discovery, resilience
+scripts/                          smoke.mjs (browser smoke test), check-readme-paths.sh
 heldout/                          blind set, never used to tune
 evidence/                         test runs, live runs, judge studies, web screenshots
 ```

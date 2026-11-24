@@ -1,4 +1,4 @@
-// Smoke test of the Web app through a real browser. Needs scripts/run.sh running.
+// Smoke test of the Web app through a real browser. Needs the app running (dotnet run --project HitlSendReply.AppHost).
 // Runs scenario 1 (auto-sent) and scenario 2 (stopped for a human, then approved) and saves
 // screenshots at 1440 and 390 px, light and dark, to evidence/screenshots/web/.
 // Usage: node scripts/smoke.mjs [baseUrl]
