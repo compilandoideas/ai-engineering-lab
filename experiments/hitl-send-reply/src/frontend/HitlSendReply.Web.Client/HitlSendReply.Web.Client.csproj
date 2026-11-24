@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <!-- The UI. It knows the HTTP contract and nothing else: no agent, no policy, no model. -->
+  <PropertyGroup>
+    <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
+    <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\backend\HitlSendReply.Contracts\HitlSendReply.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="MudBlazor" />
+  </ItemGroup>
+</Project>

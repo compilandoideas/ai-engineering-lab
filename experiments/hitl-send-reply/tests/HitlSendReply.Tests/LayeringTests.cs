@@ -2,14 +2,16 @@ using NetArchTest.Rules;
 using HitlSendReply.Api.Runs;
 using HitlSendReply.Contracts;
 using HitlSendReply.Policy;
+using HitlSendReply.Web.Client.Api;
 
 namespace HitlSendReply.Tests;
 
 /// <summary>
-/// Three boundaries. The system (HitlSendReply) never knows about its hosts (Api, Evals). The HTTP
-/// contract (Contracts) knows nothing at all, so a client built on it never sees the agent. Inside
-/// the system, the decision (Tickets, Policy) never knows about the agent framework or the LLM:
-/// MAF lives in SendReply/, the LLM judge in Judge/.
+/// Four boundaries. The system (HitlSendReply) never knows about its hosts (Api, Evals). The HTTP
+/// contract (Contracts) knows nothing at all, so a client built on it never sees the agent. The UI
+/// (Web, Web.Client) reaches the agent only through that contract. Inside the system, the decision
+/// (Tickets, Policy) never knows about the agent framework or the LLM: MAF lives in SendReply/,
+/// the LLM judge in Judge/.
 /// </summary>
 public class LayeringTests
 {
@@ -42,6 +44,27 @@ public class LayeringTests
 
         Assert.DoesNotContain(references, r => r.StartsWith("HitlSendReply", StringComparison.Ordinal));
         Assert.DoesNotContain(references, r => r.StartsWith("Microsoft.Agents", StringComparison.Ordinal) || r.StartsWith("Microsoft.Extensions.AI", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(typeof(AgentApiClient))]
+    [InlineData(typeof(HitlSendReply.Web.Components.App))]
+    public void The_ui_reaches_the_agent_only_through_the_contract(Type uiType)
+    {
+        var references = uiType.Assembly.GetReferencedAssemblies().Select(a => a.Name!).ToList();
+
+        Assert.DoesNotContain(SystemAssembly.GetName().Name, references);
+        Assert.DoesNotContain(typeof(Pipeline).Assembly.GetName().Name, references);
+        Assert.DoesNotContain(references, r => r.StartsWith("Microsoft.Agents", StringComparison.Ordinal)
+            || r.StartsWith("Microsoft.Extensions.AI", StringComparison.Ordinal) || r == "OpenAI");
+    }
+
+    [Fact]
+    public void The_client_is_built_on_the_contract()
+    {
+        var references = typeof(AgentApiClient).Assembly.GetReferencedAssemblies().Select(a => a.Name).ToList();
+
+        Assert.Contains(typeof(RunDto).Assembly.GetName().Name, references);
     }
 
     [Theory]

@@ -1,0 +1,45 @@
+@* What a person decides on one pending review. Approve sends exactly the text shown;
+   a rejection needs a reason because the agent reads it to rewrite. *@
+
+<MudText Typo="Typo.overline">@Text.Decision</MudText>
+<MudStack Spacing="3" data-testid="review-panel">
+    <MudTextField T="string" @bind-Value="_reviewer" Label="@Text.Reviewer" Variant="Variant.Outlined" Margin="Margin.Dense" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Disabled="Busy"
+               StartIcon="@Icons.Material.Filled.Send" OnClick="ApproveAsync" data-testid="approve">@Text.Approve</MudButton>
+    <MudDivider />
+    <MudTextField T="string" @bind-Value="_reason" Label="@Text.RejectReason" Variant="Variant.Outlined"
+                  Lines="3" Immediate="true" data-testid="reason-input" />
+    <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true" Disabled="@(Busy || string.IsNullOrWhiteSpace(_reason))"
+               StartIcon="@Icons.Material.Filled.Block" OnClick="RejectAsync" data-testid="reject">@Text.Reject</MudButton>
+</MudStack>
+
+@code {
+    private string _reviewer = "reviewer@example.com";
+    private string? _reason;
+
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    [Parameter, EditorRequired] public PendingReviewDto Review { get; set; } = default!;
+
+    [Parameter] public bool Busy { get; set; }
+
+    [Parameter] public EventCallback<(string CallId, ReviewRequest Review)> OnReview { get; set; }
+
+    private string? _callId;
+
+    // A new pending review starts with an empty reason.
+    protected override void OnParametersSet()
+    {
+        if (_callId != Review.CallId)
+        {
+            _callId = Review.CallId;
+            _reason = null;
+        }
+    }
+
+    private Task ApproveAsync() => SendAsync(new ReviewRequest(true, null, _reviewer));
+
+    private Task RejectAsync() => SendAsync(new ReviewRequest(false, _reason, _reviewer));
+
+    private Task SendAsync(ReviewRequest review) => OnReview.InvokeAsync((Review.CallId, review));
+}

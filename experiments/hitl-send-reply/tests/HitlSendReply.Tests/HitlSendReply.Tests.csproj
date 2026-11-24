@@ -14,6 +14,8 @@
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Api\HitlSendReply.Api.csproj" />
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Contracts\HitlSendReply.Contracts.csproj" />
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Evals\HitlSendReply.Evals.csproj" />
+    <ProjectReference Include="..\..\src\frontend\HitlSendReply.Web\HitlSendReply.Web.csproj" />
+    <ProjectReference Include="..\..\src\frontend\HitlSendReply.Web.Client\HitlSendReply.Web.Client.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

@@ -1,0 +1,205 @@
+@page "/"
+@inject AgentApiClient Api
+
+<PageTitle>HITL send_reply</PageTitle>
+
+<MudText Typo="Typo.h4" GutterBottom="true">@Text.Title</MudText>
+<MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">@Text.Subtitle</MudText>
+
+<MudPaper Outlined="true" Class="pa-4 mb-6">
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="3">
+            <MudRadioGroup T="RunMode" @bind-Value="_mode" data-testid="mode">
+                <MudRadio Value="RunMode.Scenario" Color="Color.Primary">@Text.Scenario</MudRadio>
+                <MudRadio Value="RunMode.Live" Color="Color.Primary">@Text.Live</MudRadio>
+            </MudRadioGroup>
+        </MudItem>
+        @if (_mode == RunMode.Scenario)
+        {
+            <MudItem xs="12" md="7">
+                <div data-testid="scenario">
+                <MudSelect T="int" @bind-Value="_scenario" Label="@Text.Scenario" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var s in _scenarios)
+                    {
+                        <MudSelectItem Value="s.Number">@s.Number. @s.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                </div>
+                @if (SelectedScenario is { } selected)
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.Expected: @selected.Expectation</MudText>
+                }
+            </MudItem>
+        }
+        else
+        {
+            <MudItem xs="12" md="2">
+                <MudSelect T="string" @bind-Value="_ticketId" Label="@Text.Ticket" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    @foreach (var t in _tickets)
+                    {
+                        <MudSelectItem Value="t.Id">@t.Id</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" md="5">
+                <MudTextField T="string" @bind-Value="_liveMessage" Label="@Text.CustomerMessage" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" />
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.LiveNeedsKey</MudText>
+            </MudItem>
+        }
+        <MudItem xs="12" md="2" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Disabled="_busy"
+                       StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartAsync" data-testid="start">
+                @(_run is null ? Text.Start : Text.StartAgain)
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-6" data-testid="error">@_error</MudAlert>
+}
+
+@if (_busy)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-6" />
+}
+
+@if (_run is not null)
+{
+    <MudGrid Spacing="4">
+        <MudItem xs="12" md="4">
+            <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
+                <MudText Typo="Typo.overline">@Text.Ticket</MudText>
+                <MudText Typo="Typo.h6">@_run.TicketId</MudText>
+                @if (Ticket is { } ticket)
+                {
+                    <MudSimpleTable Dense="true" Elevation="0" Class="my-2">
+                        <tbody>
+                            <tr><td>@Text.Recipient</td><td data-testid="ticket-recipient">@ticket.CustomerAddress</td></tr>
+                            <tr><td>@Text.Channel</td><td>@ticket.Channel</td></tr>
+                            <tr><td>@Text.Order</td><td>@ticket.Order.Id · @ticket.Order.Status</td></tr>
+                        </tbody>
+                    </MudSimpleTable>
+                }
+                <MudText Typo="Typo.overline">@Text.CustomerMessage</MudText>
+                <MudText Typo="Typo.body1" Class="draft-text">@_run.CustomerMessage</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
+                <MudText Typo="Typo.overline">@Text.Draft</MudText>
+                @if (Draft is not null)
+                {
+                    <MudText Typo="Typo.body1" Class="draft-text mb-1" data-testid="draft">@Draft</MudText>
+                }
+                @if (Pending is { } review)
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mb-4">→ @review.Recipient (@review.Channel). @Text.ContractHint</MudText>
+                }
+                @if (LastDecision is { } decision)
+                {
+                    <DecisionTrace Decision="decision" />
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
+                @if (Pending is { } review)
+                {
+                    <ReviewPanel Review="review" Busy="_busy" OnReview="ReviewAsync" />
+                }
+                else
+                {
+                    <RunResult Run="_run" />
+                }
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudPaper Outlined="true" Class="pa-4">
+                <AuditTimeline Entries="_run.Audit" />
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    private RunMode _mode = RunMode.Scenario;
+    private int _scenario = 1;
+    private string _ticketId = "T-1002";
+    private string? _liveMessage;
+    private IReadOnlyList<ScenarioDto> _scenarios = [];
+    private IReadOnlyList<TicketDto> _tickets = [];
+    private string? _loadedLang;
+    private RunDto? _run;
+    private string? _error;
+    private bool _busy;
+
+    private ScenarioDto? SelectedScenario => _scenarios.FirstOrDefault(s => s.Number == _scenario);
+
+    private TicketDto? Ticket => _tickets.FirstOrDefault(t => t.Id == _run?.TicketId);
+
+    private PendingReviewDto? Pending => _run?.PendingReviews.FirstOrDefault();
+
+    // The text waiting for a person; afterwards, the last text sent or, if none was, the last one reviewed.
+    private string? Draft => Pending?.Text ?? _run?.Sent.LastOrDefault()?.Text ?? _lastReviewed;
+
+    private string? _lastReviewed;
+
+    private DecisionDto? LastDecision => Pending?.Decision ?? (_run?.Audit.LastOrDefault(e => e.Event == "policy-decision") is { } e
+        ? new DecisionDto(e.Outcome ?? "", e.Stage ?? "", e.Reason ?? "")
+        : null);
+
+    // The language picks the tickets and the scenarios, so a change reloads them.
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedLang == Text.Code)
+        {
+            return;
+        }
+
+        _loadedLang = Text.Code;
+        _run = null;
+        _error = null;
+        _scenarios = await Api.ListScenariosAsync(Text.Code);
+        _tickets = await Api.ListTicketsAsync(Text.Code);
+        _liveMessage = _scenarios.FirstOrDefault(s => s.TicketId == _ticketId)?.CustomerMessage;
+    }
+
+    private Task StartAsync() => CallAsync(() => Api.StartRunAsync(
+        new StartRunRequest(_mode, _mode == RunMode.Scenario ? _scenario : null,
+            _mode == RunMode.Live ? _ticketId : null, _mode == RunMode.Live ? _liveMessage : null, Text.Code)));
+
+    private Task ReviewAsync((string CallId, ReviewRequest Review) review) =>
+        CallAsync(() => Api.ReviewAsync(_run!.RunId, review.CallId, review.Review));
+
+    private async Task CallAsync(Func<Task<ApiResult<RunDto>>> call)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await call();
+            if (result.Value is not null)
+            {
+                _lastReviewed = result.Value.RunId == _run?.RunId ? Pending?.Text : null;
+                _run = result.Value;
+            }
+
+            _error = result.Error;
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

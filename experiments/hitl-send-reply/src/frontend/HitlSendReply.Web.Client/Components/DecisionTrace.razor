@@ -1,0 +1,68 @@
+@* The policy runs its checks in a fixed order and stops at the first one that decides.
+   Stages before it passed, stages after it were never reached. *@
+
+<MudText Typo="Typo.overline">@Text.PolicyTrace</MudText>
+<MudList T="string" Dense="true" Padding="false" data-testid="trace">
+    @foreach (var stage in Stages)
+    {
+        var state = StateOf(stage);
+        <MudListItem T="string" Icon="@IconOf(state)" IconColor="@ColorOf(state)">
+            <div class="d-flex align-center gap-2">
+                <MudText Typo="Typo.body2">@stage</MudText>
+                @if (state == StageState.Decided)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Outcomes.ColorOf(Decision.Outcome)" data-testid="outcome">@Decision.Outcome</MudChip>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@(state == StageState.Passed ? Text.Passed : Text.NotReached)</MudText>
+                }
+            </div>
+        </MudListItem>
+    }
+</MudList>
+<MudAlert Severity="@SeverityOf(Decision.Outcome)" Dense="true" Class="mt-2" data-testid="reason">@Decision.Reason</MudAlert>
+
+@code {
+    private static readonly string[] Stages = ["Ticket", "Permissions", "Duplicate", "PriorRejection", "Facts", "Judge"];
+
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    [Parameter, EditorRequired] public DecisionDto Decision { get; set; } = default!;
+
+    private enum StageState { Passed, Decided, NotReached }
+
+    private StageState StateOf(string stage)
+    {
+        // A stage outside the list (Error) decided before any check ran.
+        var decided = Array.IndexOf(Stages, Decision.Stage);
+        var index = Array.IndexOf(Stages, stage);
+        if (decided < 0)
+        {
+            return StageState.NotReached;
+        }
+
+        return index < decided ? StageState.Passed : index == decided ? StageState.Decided : StageState.NotReached;
+    }
+
+    private string IconOf(StageState state) => state switch
+    {
+        StageState.Passed => Icons.Material.Filled.CheckCircle,
+        StageState.Decided => Icons.Material.Filled.Flag,
+        _ => Icons.Material.Outlined.Circle,
+    };
+
+    private Color ColorOf(StageState state) => state switch
+    {
+        StageState.Passed => Color.Success,
+        StageState.Decided => Outcomes.ColorOf(Decision.Outcome),
+        _ => Color.Default,
+    };
+
+    private static Severity SeverityOf(string outcome) => outcome switch
+    {
+        "Block" => Severity.Error,
+        "NeedsHuman" => Severity.Warning,
+        _ => Severity.Success,
+    };
+}

@@ -4,6 +4,8 @@
     <Project Path="src/backend/HitlSendReply.Api/HitlSendReply.Api.csproj" />
     <Project Path="src/backend/HitlSendReply.Contracts/HitlSendReply.Contracts.csproj" />
     <Project Path="src/backend/HitlSendReply.Evals/HitlSendReply.Evals.csproj" />
+    <Project Path="src/frontend/HitlSendReply.Web/HitlSendReply.Web.csproj" />
+    <Project Path="src/frontend/HitlSendReply.Web.Client/HitlSendReply.Web.Client.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/HitlSendReply.Tests/HitlSendReply.Tests.csproj" />
