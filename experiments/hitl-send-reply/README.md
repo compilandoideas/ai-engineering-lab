@@ -322,8 +322,9 @@ dotnet run --project HitlSendReply.AppHost   # dashboard URL with its login toke
 ```
 
 The Aspire dashboard shows postgres, api and web; the Web app is at `http://localhost:5090`. Pick a scenario and press Run. Scenario 2 stops for you: approve it,
-or write a reason and reject it. Inbox: New email from `li.wang@example.com` → the row shows
-`AwaitingReview` → click it to review. EN/ES and light/dark are in the top bar. The API contract is at
+or write a reason and reject it. Inbox: New email from `li.wang@example.com` (English) or
+`mateo.rojas@example.com` (Spanish) → the agent's reply waits under the email → Approve, Edit or
+Reject; the list shows where each reply stands. EN/ES and light/dark are in the top bar. The API contract is at
 `http://localhost:5080/openapi/v1.json`.
 
 In Rider: run the `http` profile of `HitlSendReply.AppHost`; with Rider's Aspire plugin, debugging
