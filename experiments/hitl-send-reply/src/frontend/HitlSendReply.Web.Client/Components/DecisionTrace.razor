@@ -8,10 +8,10 @@
         var state = StateOf(stage);
         <MudListItem T="string" Icon="@IconOf(state)" IconColor="@ColorOf(state)">
             <div class="d-flex align-center gap-2">
-                <MudText Typo="Typo.body2">@stage</MudText>
+                <MudText Typo="Typo.body2">@Text.Name(stage)</MudText>
                 @if (state == StageState.Decided)
                 {
-                    <MudChip T="string" Size="Size.Small" Color="Outcomes.ColorOf(Decision.Outcome)" data-testid="outcome">@Decision.Outcome</MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="Outcomes.ColorOf(Decision.Outcome)" data-testid="outcome" data-outcome="@Decision.Outcome">@Text.Name(Decision.Outcome)</MudChip>
                 }
                 else
                 {
@@ -21,7 +21,7 @@
         </MudListItem>
     }
 </MudList>
-<MudAlert Severity="@SeverityOf(Decision.Outcome)" Dense="true" Class="mt-2" data-testid="reason">@Decision.Reason</MudAlert>
+<MudAlert Severity="@SeverityOf(Decision.Outcome)" Dense="true" Class="mt-2" data-testid="reason">@Text.Reason(Decision.Reason)</MudAlert>
 
 @code {
     private static readonly string[] Stages = ["Ticket", "Permissions", "Duplicate", "PriorRejection", "Facts", "Judge"];

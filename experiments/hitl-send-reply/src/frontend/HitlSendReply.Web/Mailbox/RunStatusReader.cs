@@ -11,8 +11,19 @@ public interface IRunStatusReader
     Task<RunState?> ReadAsync(string runId, CancellationToken cancellationToken);
 }
 
-/// <summary>The run as the inbox shows it: a status for the row and, if starting failed, why.</summary>
-public sealed record RunState(EmailStatus Status, string? Error = null);
+/// <summary>
+/// The run as the inbox shows it: a status for the row, if starting failed why, the reviews still
+/// waiting for a person and the verdicts people gave.
+/// </summary>
+public sealed record RunState(
+    EmailStatus Status, string? Error = null,
+    IReadOnlyList<PendingReply>? Pending = null, IReadOnlyList<ReplyVerdict>? Verdicts = null);
+
+public sealed record PendingReply(string CallId, string Recipient, string Text);
+
+/// <summary>A person's verdict. FinalText is what reached the customer, when something did; Edited when the person wrote it.</summary>
+public sealed record ReplyVerdict(
+    string CallId, bool Approved, string? Reason, string? Reviewer, DateTimeOffset At, bool Edited = false, string? FinalText = null);
 
 /// <summary>Reads a run back from the Agent API (GET /api/runs/{id}) to show it on the email's row.</summary>
 public sealed class RunStatusReader(HttpClient http) : IRunStatusReader
@@ -27,14 +38,25 @@ public sealed class RunStatusReader(HttpClient http) : IRunStatusReader
 
         response.EnsureSuccessStatusCode();
         var run = await response.Content.ReadFromJsonAsync<RunDto>(cancellationToken);
-        return run switch
+        if (run is null)
         {
-            null => null,
-            { Status: RunStatus.Starting } => new RunState(EmailStatus.Notified),
-            { Status: RunStatus.Failed } => new RunState(EmailStatus.RunFailed, run.Error),
-            { Status: RunStatus.AwaitingReview } => new RunState(EmailStatus.AwaitingReview),
-            { Sent.Count: > 0 } => new RunState(EmailStatus.Sent),
-            _ => new RunState(EmailStatus.Blocked),
+            return null;
+        }
+
+        var (status, error) = run switch
+        {
+            { Status: RunStatus.Starting } => (EmailStatus.Notified, (string?)null),
+            { Status: RunStatus.Failed } => (EmailStatus.RunFailed, run.Error),
+            { Status: RunStatus.AwaitingReview } => (EmailStatus.AwaitingReview, null),
+            { Sent.Count: > 0 } => (EmailStatus.Sent, null),
+            _ => (EmailStatus.Blocked, null),
         };
+        var pending = run.PendingReviews.Select(p => new PendingReply(p.CallId, p.Recipient, p.Text)).ToList();
+        var verdicts = run.Audit
+            .Where(a => a.CallId is not null && a.Event is "human-approved" or "human-rejected" or "human-edited")
+            .Select(a => new ReplyVerdict(a.CallId!, a.Event != "human-rejected", a.Reason, a.Actor, a.At,
+                Edited: a.Event == "human-edited", FinalText: run.Sent.FirstOrDefault(s => s.TextHash == a.TextHash)?.Text))
+            .ToList();
+        return new RunState(status, error, pending, verdicts);
     }
 }

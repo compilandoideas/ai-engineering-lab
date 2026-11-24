@@ -43,8 +43,8 @@ public sealed class Pipeline
         var tools = new SupportTools(tickets, outbox, ledger, audit);
         var agent = SupportAgent.Create(agentModel, tools, gate, disableApprovalResponseBinding);
         var runner = createResponse is null
-            ? new SupportRunner(agent, gate, ledger, reviews, audit, tickets, human)
-            : new SupportRunner(agent, gate, ledger, reviews, audit, tickets, human) { CreateResponse = createResponse };
+            ? new SupportRunner(agent, gate, ledger, reviews, audit, tickets, human) { Tools = tools }
+            : new SupportRunner(agent, gate, ledger, reviews, audit, tickets, human) { CreateResponse = createResponse, Tools = tools };
 
         return new Pipeline
         {

@@ -39,6 +39,8 @@
     {
         PaletteLight = new PaletteLight { AppbarBackground = "#ffffff", AppbarText = "rgba(0,0,0,0.87)" },
         PaletteDark = new PaletteDark { AppbarBackground = "#27272f", AppbarText = "rgba(255,255,255,0.80)" },
+        // Buttons in sentence case, not Material's uppercase.
+        Typography = new Typography { Button = new ButtonTypography { TextTransform = "none", FontWeight = "500" } },
     };
 
     private bool _dark;

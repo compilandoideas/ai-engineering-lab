@@ -92,6 +92,36 @@ public class RunsApiTests(RunsApiTests.ApiFactory factory) : IClassFixture<RunsA
     }
 
     [Fact]
+    public async Task An_edited_reply_is_sent_as_the_reviewer_wrote_it()
+    {
+        const string mine = "Your order #A-1077 was delivered on November 7. A teammate will review the damage report and write back.";
+        var run = await StartAsync(2, "en");
+
+        var response = await _http.PostAsJsonAsync($"/api/runs/{run.RunId}/reviews/{run.PendingReviews[0].CallId}",
+            new ReviewRequest(true, null, "reviewer@test", mine));
+        run = (await response.Content.ReadFromJsonAsync<RunDto>())!;
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(mine, Assert.Single(run.Sent).Text);
+        Assert.Contains(run.Audit, a => a.Event == "human-edited" && a.Actor == "reviewer@test");
+    }
+
+    [Fact]
+    public async Task An_edited_reply_with_a_wrong_order_is_refused_and_the_review_stays_open()
+    {
+        var run = await StartAsync(2, "en");
+        var callId = run.PendingReviews[0].CallId;
+
+        var response = await _http.PostAsJsonAsync($"/api/runs/{run.RunId}/reviews/{callId}",
+            new ReviewRequest(true, null, "reviewer@test", "Your order #A-9999 was delivered on November 7."));
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        var state = await _http.GetFromJsonAsync<RunDto>($"/api/runs/{run.RunId}");
+        Assert.Equal(callId, Assert.Single(state!.PendingReviews).CallId);
+        Assert.Empty(state.Sent);
+    }
+
+    [Fact]
     public async Task A_rejection_without_a_reason_is_refused()
     {
         var run = await StartAsync(2, "en");

@@ -46,14 +46,14 @@ await byId('start').click();
 await byId('result').waitFor();
 const result1 = await byId('result').innerText();
 if (!/Sent/.test(result1)) { fail(`scenario 1 should auto-send, got: ${result1}`); }
-if ((await byId('outcome').innerText()) !== 'AutoSend') { fail('scenario 1 should be AutoSend'); }
+if ((await byId('outcome').getAttribute('data-outcome')) !== 'AutoSend') { fail('scenario 1 should be AutoSend'); }
 await shot('scenario1-autosend-1440-light');
 
 // Scenario 2: the policy stops a refund promise; a person approves it.
 await pickScenario(2);
 await byId('start').click();
 await byId('approve').waitFor();
-if ((await byId('outcome').innerText()) !== 'NeedsHuman') { fail('scenario 2 should stop for a human'); }
+if ((await byId('outcome').getAttribute('data-outcome')) !== 'NeedsHuman') { fail('scenario 2 should stop for a human'); }
 await shot('scenario2-pending-1440-light');
 await setDark(true);
 await shot('scenario2-pending-1440-dark');
@@ -67,23 +67,34 @@ await byId('approve').click();
 await byId('result').waitFor();
 const result2 = await byId('result').innerText();
 if (!/Sent/.test(result2)) { fail(`scenario 2 should be sent after approval, got: ${result2}`); }
-const audit = await byId('audit').innerText();
-if (!/human-approved/.test(audit) || !/\bsent\b/.test(audit)) { fail('audit should show human-approved then sent'); }
+const events = await byId('audit').locator('[data-event]').evaluateAll((els) => els.map((e) => e.dataset.event));
+if (!events.includes('human-approved') || !events.includes('sent')) { fail(`audit should show human-approved then sent, got: ${events}`); }
 await shot('scenario2-approved-1440-light');
 
-// Inbox: an email from a customer becomes a run; the person approves it from the row.
+// Inbox, laid out like a mail client: an email from a customer becomes a run, its reply waits
+// for a person in email_replies, and the person approves it (or edits it) under the email.
+async function composeEmail(subject) {
+  await byId('compose').click();
+  await page.locator('[data-testid="compose-from"] input, input[data-testid="compose-from"]').first().fill('li.wang@example.com');
+  await page.keyboard.press('Tab');
+  await page.locator('[data-testid="compose-subject"] input, input[data-testid="compose-subject"]').first().fill(subject);
+  await page.locator('[data-testid="compose-body"] textarea, textarea[data-testid="compose-body"]').first().fill('The package arrived damaged. I want my money back.');
+}
+
+const rowOf = (subject) => page.locator(`[data-testid="mail-row"][data-subject="${subject}"]`);
 const subject = `Damaged package ${Date.now()}`;
 await page.goto(`${baseUrl}/inbox`);
-await byId('compose').click();
-await page.locator('[data-testid="compose-from"] input, input[data-testid="compose-from"]').first().fill('li.wang@example.com');
-await page.keyboard.press('Tab');
-await page.locator('[data-testid="compose-subject"] input, input[data-testid="compose-subject"]').first().fill(subject);
-await page.locator('[data-testid="compose-body"] textarea, textarea[data-testid="compose-body"]').first().fill('The package arrived damaged. I want my money back.');
+await byId('inbox').waitFor();
+await composeEmail(subject);
 await shot('inbox-compose-1440-light');
 await byId('compose-send').click();
-const row = page.locator('.mud-table-row', { hasText: subject });
-await row.locator('[data-testid="email-status"]', { hasText: 'AwaitingReview' }).waitFor({ timeout: 90000 });
+const row = rowOf(subject);
+await row.locator('[data-testid="email-status"][data-status="AwaitingReview"]').waitFor({ timeout: 90000 });
+await row.locator('[data-testid="reply-status"][data-status="Pending"]').waitFor({ timeout: 10000 })
+  .catch(() => fail('the row should show the reply waiting for a person'));
+await byId('approve').waitFor({ timeout: 30000 });
 await page.locator('.mud-snackbar').waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
+if (!/approval/.test(await byId('summary').innerText())) { fail('the reply should say on top that it needs approval'); }
 await shot('inbox-awaiting-1440-light');
 await setDark(true);
 await shot('inbox-awaiting-1440-dark');
@@ -93,15 +104,31 @@ await setDark(false);
 await shot('inbox-awaiting-390-light');
 await page.setViewportSize({ width: 1440, height: 1000 });
 
-await row.click();
-await byId('approve').waitFor();
-if ((await byId('ticket-recipient').innerText()) !== 'li.wang@example.com') { fail('the review should show the ticket address'); }
 await byId('approve').click();
-await byId('result').waitFor();
-await byId('nav-inbox').click();
-await page.locator('.mud-table-row', { hasText: subject }).locator('[data-testid="email-status"]', { hasText: 'Sent' }).waitFor({ timeout: 15000 })
+await byId('result').waitFor({ state: 'attached' });
+await row.locator('[data-testid="reply-status"][data-status="Approved"]').waitFor({ timeout: 15000 })
+  .catch(() => fail('the row should show the reply as approved'));
+await row.locator('[data-testid="email-status"][data-status="Sent"]').waitFor({ timeout: 15000 })
   .catch(() => fail('the row should show Sent after the approval'));
 await shot('inbox-sent-1440-light');
+
+// Edit: the person sends their own version; it passes the rules again and is marked as edited.
+const edited = `Edited ${Date.now()}`;
+await composeEmail(edited);
+await byId('compose-send').click();
+const editedRow = rowOf(edited);
+await editedRow.locator('[data-testid="reply-status"][data-status="Pending"]').waitFor({ timeout: 90000 });
+await byId('edit').waitFor({ timeout: 30000 });
+await byId('edit').click();
+const mine = 'Your order #A-1077 was delivered on November 7. A teammate will review the damage report and write back.';
+await page.locator('[data-testid="edit-input"] textarea, textarea[data-testid="edit-input"]').first().fill(mine);
+await shot('inbox-edit-1440-light');
+await byId('send-edit').click();
+await byId('result').waitFor({ state: 'attached' });
+if (!(await byId('draft').innerText()).includes(mine)) { fail('the edited text should be what was sent'); }
+await editedRow.locator('[data-testid="reply-status"][data-status="Approved"][data-edited="true"]').waitFor({ timeout: 15000 })
+  .catch(() => fail('the row should mark the reply as edited'));
+await shot('inbox-edited-1440-light');
 
 await browser.close();
 console.log(process.exitCode ? 'smoke: FAILED' : `smoke: OK (screenshots in ${path.relative(process.cwd(), out)})`);

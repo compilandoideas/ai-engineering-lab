@@ -71,8 +71,19 @@ public static class RunEndpoints
             return TypedResults.Problem("A rejection needs a reason: the agent reads it to rewrite.", statusCode: StatusCodes.Status400BadRequest);
         }
 
+        var edited = string.IsNullOrWhiteSpace(review.EditedText) ? null : review.EditedText.Trim();
+        if (edited is not null && !review.Approved)
+        {
+            return TypedResults.Problem("An edited text is sent on approval: set approved to true.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
         var reviewer = string.IsNullOrWhiteSpace(review.Reviewer) ? "reviewer" : review.Reviewer;
-        var verdict = review.Approved ? HumanVerdict.Approve(reviewer) : HumanVerdict.Reject(reviewer, review.Reason!);
+        var verdict = (review.Approved, edited) switch
+        {
+            (true, not null) => HumanVerdict.Edit(reviewer, edited),
+            (true, null) => HumanVerdict.Approve(reviewer),
+            _ => HumanVerdict.Reject(reviewer, review.Reason!),
+        };
 
         // A run still starting holds the gate while the agent drafts: answer now instead of waiting.
         if (entry.Run is null)
@@ -90,6 +101,12 @@ public static class RunEndpoints
 
             await entry.Pipeline.Runner.ResumeAsync(run, callId, verdict, cancellationToken);
             return TypedResults.Ok(RunMapper.ToDto(entry));
+        }
+        catch (EditRefusedException refused)
+        {
+            // Nothing was sent and the review is still pending: the reviewer fixes the text and tries again.
+            return TypedResults.Problem(refused.Decision.Reason, statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: $"The edited text did not pass the {refused.Decision.Stage} rule.");
         }
         finally
         {

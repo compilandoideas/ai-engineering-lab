@@ -17,6 +17,7 @@ var agentApi = builder.Configuration["AgentApi:BaseUrl"]
 builder.AddNpgsqlDbContext<MailboxDbContext>("mailbox");
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<MailboxService>();
+builder.Services.AddHostedService<PendingReplyTracker>();
 builder.Services.AddHttpClient<IRunStatusReader, RunStatusReader>(http => http.BaseAddress = new Uri(agentApi));
 // Replaces the default resilience handler for this client only (the API is experimental in
 // Microsoft.Extensions.Http.Resilience 10.x, hence the pragma).
@@ -37,7 +38,7 @@ builder.Services.AddHttpClient<IInboundEmailNotifier, WebhookInboundEmailNotifie
 
 var app = builder.Build();
 
-// One table, migrated on start. A larger app would run migrations as their own step.
+// The mailbox tables, migrated on start. A larger app would run migrations as their own step.
 using (var scope = app.Services.CreateScope())
 {
     await scope.ServiceProvider.GetRequiredService<MailboxDbContext>().Database.MigrateAsync();

@@ -1,0 +1,164 @@
+@* Under the open email: the reply the agent drafted, what the policy decided and, while it waits
+   for a person, the three actions. Reads the run from the Agent API through the Web server. *@
+@implements IAsyncDisposable
+@inject AgentApiClient Api
+
+<div data-testid="mail-reply">
+    @if (_error is not null)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3" data-testid="error">@_error</MudAlert>
+    }
+
+    @if (_run is null || _run.Status == RunStatus.Starting)
+    {
+        <MudAlert Severity="Severity.Info" Dense="true" data-testid="starting">@Text.Starting</MudAlert>
+    }
+    else if (_run.Status == RunStatus.Failed)
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" data-testid="failed">@Text.RunFailed @_run.Error</MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="@Severity" Dense="true" Class="mb-4" data-testid="summary">@Text.Summary(_run)</MudAlert>
+        @if (Pending is null)
+        {
+            <span data-testid="result" hidden></span>
+        }
+
+        <div class="mail-draft pa-4 mb-4">
+            <div class="d-flex flex-wrap align-center gap-2 mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.SmartToy" Size="Size.Small" Color="Color.Primary" />
+                <MudText Typo="Typo.subtitle2">@(_run.Sent.Count > 0 ? Text.ReplySent : Text.AgentAnswer)</MudText>
+                @if (Recipient is { } to)
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.ToLabel: @to</MudText>
+                }
+            </div>
+            <MudText Typo="Typo.body1" Class="draft-text" data-testid="draft">@Draft</MudText>
+            @if (Pending is not null)
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">@Text.ContractHint</MudText>
+            }
+        </div>
+
+        @* Once decided, the summary on top says what happened; the box above shows what was sent. *@
+        @if (Pending is { } review)
+        {
+            <ReviewPanel Review="review" Busy="_busy" OnReview="ReviewAsync" />
+        }
+
+        <MudExpansionPanels Outlined="true" Elevation="0" Class="mt-4">
+            <MudExpansionPanel Text="@Text.WhyItStopped" data-testid="why">
+                @if (LastDecision is { } decision)
+                {
+                    <DecisionTrace Decision="decision" />
+                }
+                <div class="mt-4">
+                    @* Rendered later by the panel: by then the run may be reloading. *@
+                    <AuditTimeline Entries="@(_run?.Audit ?? [])" />
+                </div>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+    }
+</div>
+
+@code {
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    [Parameter, EditorRequired] public string RunId { get; set; } = "";
+
+    /// <summary>Raised after a decision, so the list can show the new status at once.</summary>
+    [Parameter] public EventCallback OnDecided { get; set; }
+
+    private RunDto? _run;
+    private string? _loaded;
+    private string? _error;
+    private string? _lastReviewed;
+    private bool _busy;
+    private readonly CancellationTokenSource _stop = new();
+
+    private PendingReviewDto? Pending => _run?.PendingReviews.FirstOrDefault();
+
+    private string? Draft => Pending?.Text ?? _run?.Sent.LastOrDefault()?.Text ?? _lastReviewed;
+
+    private string? Recipient => Pending?.Recipient ?? _run?.Sent.LastOrDefault()?.Recipient;
+
+    private Severity Severity => Pending is not null ? Severity.Warning : _run?.Sent.Count > 0 ? Severity.Success : Severity.Error;
+
+    private DecisionDto? LastDecision => Pending?.Decision ?? (_run?.Audit.LastOrDefault(e => e.Event == "policy-decision") is { } e
+        ? new DecisionDto(e.Outcome ?? "", e.Stage ?? "", e.Reason ?? "")
+        : null);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded == RunId)
+        {
+            return;
+        }
+
+        _loaded = RunId;
+        _run = null;
+        _error = null;
+        _lastReviewed = null;
+        await LoadAsync();
+
+        // A run from an email may still be drafting: read it again until the agent is done.
+        for (var i = 0; i < 120 && _loaded == RunId && _run is null or { Status: RunStatus.Starting } && !_stop.IsCancellationRequested; i++)
+        {
+            StateHasChanged();
+            await Task.Delay(1000);
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            var result = await Api.GetRunAsync(RunId);
+            _run = result.Value ?? _run;
+            _error = result.Error;
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task ReviewAsync((string CallId, ReviewRequest Review) review)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var reviewed = Pending?.Text;
+            var result = await Api.ReviewAsync(RunId, review.CallId, review.Review);
+            if (result.Value is not null)
+            {
+                _lastReviewed = reviewed;
+                _run = result.Value;
+            }
+
+            _error = result.Status == 422 ? $"{Text.EditRefused} {result.Error}" : result.Error;
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        if (_error is null)
+        {
+            await OnDecided.InvokeAsync();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _stop.CancelAsync();
+        _stop.Dispose();
+    }
+}

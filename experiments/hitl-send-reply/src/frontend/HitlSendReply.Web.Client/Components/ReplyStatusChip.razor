@@ -1,0 +1,32 @@
+@* Where the reply that needed a person stands, as kept in email_replies. *@
+
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="ColorOf(Reply.Status)" Icon="@IconOf(Reply)"
+         data-testid="reply-status" data-status="@Reply.Status" data-edited="@Reply.Edited.ToString().ToLowerInvariant()">@NameOf(Reply)</MudChip>
+
+@code {
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    [Parameter, EditorRequired] public EmailReplyDto Reply { get; set; } = default!;
+
+    private string NameOf(EmailReplyDto reply) => reply.Status switch
+    {
+        ReplyStatus.Approved when reply.Edited => $"{Text.ReplyApproved}, {Text.EditedBy} {reply.Reviewer}",
+        ReplyStatus.Approved => Text.ReplyApproved,
+        ReplyStatus.Rejected => Text.ReplyRejected,
+        _ => Text.ReplyPending,
+    };
+
+    private static string IconOf(EmailReplyDto reply) => reply.Status switch
+    {
+        ReplyStatus.Pending => Icons.Material.Filled.HourglassTop,
+        _ when reply.Edited => Icons.Material.Filled.Edit,
+        _ => "",
+    };
+
+    private static Color ColorOf(ReplyStatus status) => status switch
+    {
+        ReplyStatus.Approved => Color.Success,
+        ReplyStatus.Rejected => Color.Error,
+        _ => Color.Warning,
+    };
+}

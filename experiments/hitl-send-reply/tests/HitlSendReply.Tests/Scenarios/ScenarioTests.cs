@@ -51,9 +51,12 @@ public class ScenarioTests
 
         await pipeline.Runner.RunAsync(scenario.Ticket.Id, scenario.CustomerMessage);
 
-        var prompt = Assert.Single(approver.Prompts);
+        // The agent rewrites after the rejection; the rewrite also goes to the person, who rejects it too.
+        Assert.Equal(2, approver.Prompts.Count);
+        var prompt = approver.Prompts[0];
         Assert.Equal(PolicyStage.Judge, prompt.Decision.Stage);
         Assert.Equal(scenario.Drafts[0], prompt.Text);
+        Assert.Equal((PolicyStage.PriorRejection, scenario.Drafts[1]), (approver.Prompts[1].Decision.Stage, approver.Prompts[1].Text));
         Assert.Equal(scenario.Ticket.CustomerAddress, prompt.Recipient);
         Assert.Equal(Channel.Email, prompt.Channel);
         Assert.Empty(pipeline.Outbox.Sent);

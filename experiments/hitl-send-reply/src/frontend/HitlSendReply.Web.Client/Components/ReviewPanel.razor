@@ -1,21 +1,44 @@
-@* What a person decides on one pending review. Approve sends exactly the text shown;
-   a rejection needs a reason because the agent reads it to rewrite. *@
+@* What a person decides on one pending review. Approve sends exactly the text shown; Edit sends
+   the person's own version after the deterministic rules check it again; a rejection needs a
+   reason because the agent reads it to rewrite. *@
 
 <MudText Typo="Typo.overline">@Text.Decision</MudText>
 <MudStack Spacing="3" data-testid="review-panel">
     <MudTextField T="string" @bind-Value="_reviewer" Label="@Text.Reviewer" Variant="Variant.Outlined" Margin="Margin.Dense" />
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Disabled="Busy"
-               StartIcon="@Icons.Material.Filled.Send" OnClick="ApproveAsync" data-testid="approve">@Text.Approve</MudButton>
-    <MudDivider />
-    <MudTextField T="string" @bind-Value="_reason" Label="@Text.RejectReason" Variant="Variant.Outlined"
-                  Lines="3" Immediate="true" data-testid="reason-input" />
-    <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true" Disabled="@(Busy || string.IsNullOrWhiteSpace(_reason))"
-               StartIcon="@Icons.Material.Filled.Block" OnClick="RejectAsync" data-testid="reject">@Text.Reject</MudButton>
+    @if (_editing)
+    {
+        <MudTextField T="string" @bind-Value="_edited" Label="@Text.YourVersion" Variant="Variant.Outlined"
+                      Lines="6" Immediate="true" data-testid="edit-input" />
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.EditHint</MudText>
+        <div class="d-flex gap-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(Busy || string.IsNullOrWhiteSpace(_edited))"
+                       StartIcon="@Icons.Material.Filled.Send" OnClick="SendEditAsync" data-testid="send-edit">@Text.SendEdited</MudButton>
+            <MudButton Variant="Variant.Text" Disabled="Busy" OnClick="() => _editing = false" data-testid="cancel-edit">@Text.Cancel</MudButton>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="Busy"
+                       StartIcon="@Icons.Material.Filled.Send" OnClick="ApproveAsync" data-testid="approve">@Text.Approve</MudButton>
+            <MudButton Variant="Variant.Outlined" Disabled="Busy" StartIcon="@Icons.Material.Filled.Edit"
+                       OnClick="StartEdit" data-testid="edit">@Text.Edit</MudButton>
+        </div>
+        <MudDivider />
+        <MudTextField T="string" @bind-Value="_reason" Label="@Text.RejectReason" Variant="Variant.Outlined"
+                      Lines="2" Immediate="true" data-testid="reason-input" />
+        <div>
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" Disabled="@(Busy || string.IsNullOrWhiteSpace(_reason))"
+                       StartIcon="@Icons.Material.Filled.Block" OnClick="RejectAsync" data-testid="reject">@Text.Reject</MudButton>
+        </div>
+    }
 </MudStack>
 
 @code {
     private string _reviewer = "reviewer@example.com";
     private string? _reason;
+    private string? _edited;
+    private bool _editing;
 
     [CascadingParameter] public Labels Text { get; set; } = Labels.En;
 
@@ -27,17 +50,27 @@
 
     private string? _callId;
 
-    // A new pending review starts with an empty reason.
+    // A new pending review starts clean: no reason, no edit.
     protected override void OnParametersSet()
     {
         if (_callId != Review.CallId)
         {
             _callId = Review.CallId;
             _reason = null;
+            _edited = null;
+            _editing = false;
         }
     }
 
+    private void StartEdit()
+    {
+        _edited ??= Review.Text;
+        _editing = true;
+    }
+
     private Task ApproveAsync() => SendAsync(new ReviewRequest(true, null, _reviewer));
+
+    private Task SendEditAsync() => SendAsync(new ReviewRequest(true, null, _reviewer, _edited));
 
     private Task RejectAsync() => SendAsync(new ReviewRequest(false, _reason, _reviewer));
 

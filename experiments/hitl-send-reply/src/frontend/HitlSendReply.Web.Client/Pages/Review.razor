@@ -7,7 +7,14 @@
 <MudText Typo="Typo.h4" GutterBottom="true">@Text.Title</MudText>
 <MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">@Text.Subtitle</MudText>
 
-<MudPaper Outlined="true" Class="pa-4 mb-6">
+@* Opened from the inbox, the run belongs to an email: starting another run here would only confuse. *@
+@if (RunId is not null)
+{
+    <MudButton Href="inbox" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Class="mb-4" data-testid="back-to-inbox">@Text.BackToInbox</MudButton>
+}
+else
+{
+<MudPaper Outlined="true" Class="pa-4 mb-6" data-testid="run-panel">
     <MudGrid Spacing="3">
         <MudItem xs="12" md="3">
             <MudRadioGroup T="RunMode" @bind-Value="_mode" data-testid="mode">
@@ -55,6 +62,7 @@
         </MudItem>
     </MudGrid>
 </MudPaper>
+}
 
 @if (_error is not null)
 {
@@ -76,6 +84,7 @@ else if (_run is { Status: RunStatus.Failed })
 }
 else if (_run is not null)
 {
+    <MudAlert Severity="@SummarySeverity" Class="mb-6" data-testid="summary">@Text.Summary(_run)</MudAlert>
     <MudGrid Spacing="4">
         <MudItem xs="12" md="4">
             <MudPaper Outlined="true" Class="pa-4" Style="height:100%">
@@ -160,6 +169,8 @@ else if (_run is not null)
         .FirstOrDefault();
 
     private PendingReviewDto? Pending => _run?.PendingReviews.FirstOrDefault();
+
+    private Severity SummarySeverity => Pending is not null ? Severity.Warning : _run?.Sent.Count > 0 ? Severity.Success : Severity.Error;
 
     // The text waiting for a person; afterwards, the last text sent or, if none was, the last one reviewed.
     private string? Draft => Pending?.Text ?? _run?.Sent.LastOrDefault()?.Text ?? _lastReviewed;

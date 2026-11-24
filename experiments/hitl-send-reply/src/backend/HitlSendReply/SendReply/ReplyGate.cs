@@ -22,6 +22,9 @@ public sealed class ReplyGate(PublishPolicy policy, ApprovalLedger ledger, IAudi
     private static string CacheKey(FunctionCallContent call) =>
         SendReplyArguments.TryRead(call) is { } r ? $"{call.CallId}|{r.Key.TicketId}|{r.Key.TextHash}" : $"{call.CallId}|invalid";
 
+    /// <summary>The deterministic rules on a reviewer's own text; null when it passes.</summary>
+    public PolicyDecision? CheckHumanEdit(ReplyRequest request) => policy.CheckHumanEdit(request);
+
     /// <summary>Auto-approval rule: returns true only when the policy says AutoSend.</summary>
     public async ValueTask<bool> AutoApproveAsync(ToolAutoApprovalRuleContext context)
     {

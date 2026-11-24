@@ -29,6 +29,9 @@ public sealed class SupportRunner(
     public Func<ToolApprovalRequestContent, bool, string, AIContent> CreateResponse { get; init; } =
         static (request, approved, reason) => request.CreateResponse(approved, reason);
 
+    /// <summary>Sends a reviewer's edited text through the same tool the agent uses. Needed only to accept edits.</summary>
+    public SupportTools? Tools { get; init; }
+
     /// <summary>
     /// Runs to the end in one call, asking the in-process reviewer at every stop. Used by the
     /// scenarios and tests; an HTTP host uses <see cref="StartAsync"/> and <see cref="ResumeAsync"/>.
@@ -67,12 +70,39 @@ public sealed class SupportRunner(
     /// <summary>Records the person's verdict on one pending review and continues the run when nothing else is pending.</summary>
     public async Task<ApprovalRun> ResumeAsync(ApprovalRun run, string callId, HumanVerdict verdict, CancellationToken cancellationToken = default)
     {
+        if (verdict.EditedText is { } edited)
+        {
+            if (Tools is null)
+            {
+                throw new InvalidOperationException("Edits need SupportTools to send the reviewer's text.");
+            }
+
+            // Checked before the review is taken: a refused edit leaves the review pending.
+            var pendingCall = run.PendingReviews.FirstOrDefault(p => p.CallId == callId)
+                ?? throw new InvalidOperationException($"No pending review '{callId}' on this run.");
+            if (edited == pendingCall.Text)
+            {
+                // Nothing changed: an ordinary approval.
+                verdict = HumanVerdict.Approve(verdict.Reviewer);
+            }
+            else if (gate.CheckHumanEdit(new ReplyRequest(pendingCall.TicketId, edited)) is { } refused)
+            {
+                throw new EditRefusedException(refused);
+            }
+        }
+
         if (!run.TryTakeAwaiting(callId, out var request, out var prompt))
         {
             throw new InvalidOperationException($"No pending review '{callId}' on this run.");
         }
 
         var reply = SendReplyArguments.TryRead((FunctionCallContent)request.ToolCall!)!;
+        if (verdict.EditedText is { } text)
+        {
+            run.Answer(CreateResponse(request, false, SendEdit(callId, reply, prompt, verdict, text)));
+            return await ContinueAsync(run, cancellationToken);
+        }
+
         audit.Record(verdict.Approved ? "human-approved" : "human-rejected", callId, reply.TicketId, reply.Key.TextHash,
             prompt.Recipient, prompt.Channel.ToString(), verdict.Approved ? "Approved" : "Rejected",
             prompt.Decision.Stage.ToString(), verdict.Reason, verdict.Reviewer);
@@ -87,6 +117,25 @@ public sealed class SupportRunner(
         }
 
         run.Answer(CreateResponse(request, verdict.Approved, verdict.Reason));
+        return await ContinueAsync(run, cancellationToken);
+    }
+
+    // The framework replays the agent's own call on approval, never edited arguments, so the
+    // reviewer's text is sent here through the same tool, and the agent's call is answered as
+    // replaced. Its draft counts as rejected: any later draft on this ticket goes to a person too.
+    private string SendEdit(string callId, ReplyRequest reply, ApprovalPrompt prompt, HumanVerdict verdict, string text)
+    {
+        var edited = new ReplyRequest(reply.TicketId, text);
+        audit.Record("human-edited", callId, reply.TicketId, edited.Key.TextHash, prompt.Recipient, prompt.Channel.ToString(),
+            "Edited", prompt.Decision.Stage.ToString(), verdict.Reason, verdict.Reviewer);
+        reviews.RecordRejection(reply.Key, "Replaced by the reviewer's edited text.");
+        ledger.Authorize(edited.Key, verdict.Reviewer);
+        var result = Tools!.Send(reply.TicketId, text, callId);
+        return $"The reviewer edited your reply and sent their version ({result}). Do not send another reply.";
+    }
+
+    private async Task<ApprovalRun> ContinueAsync(ApprovalRun run, CancellationToken cancellationToken)
+    {
         if (run.Status == ApprovalRunStatus.AwaitingReview)
         {
             return run;

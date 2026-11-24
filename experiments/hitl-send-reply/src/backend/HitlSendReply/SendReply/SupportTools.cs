@@ -31,9 +31,15 @@ public sealed class SupportTools(ITicketStore tickets, IOutbox outbox, ApprovalL
     public string SendReply(
         [Description("Ticket id, for example T-1001")] string ticketId,
         [Description("Exact text of the reply")] string text)
+        => Send(ticketId, text, FunctionInvokingChatClient.CurrentContext?.CallContent.CallId);
+
+    /// <summary>
+    /// The one send path: the agent's tool call and a reviewer's edited text both go through it,
+    /// so both need the exact text authorized in the ledger.
+    /// </summary>
+    public string Send(string ticketId, string text, string? callId)
     {
         var key = ReplyKey.For(ticketId, text);
-        var callId = FunctionInvokingChatClient.CurrentContext?.CallContent.CallId;
         var ticket = tickets.Find(ticketId);
 
         if (ticket is null)

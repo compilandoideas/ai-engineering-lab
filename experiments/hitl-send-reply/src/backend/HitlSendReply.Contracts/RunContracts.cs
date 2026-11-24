@@ -11,8 +11,11 @@ public enum RunStatus { AwaitingReview, Completed, Starting, Failed }
 /// <summary>Start a run: a designed scenario (scripted model and judge, no key) or the real model on a ticket.</summary>
 public sealed record StartRunRequest(RunMode Mode, int? Scenario = null, string? TicketId = null, string? CustomerMessage = null, string Lang = "en");
 
-/// <summary>A person's verdict on one pending review. A rejection needs a reason: the agent reads it to rewrite.</summary>
-public sealed record ReviewRequest(bool Approved, string? Reason, string Reviewer);
+/// <summary>
+/// A person's verdict on one pending review. A rejection needs a reason: the agent reads it to
+/// rewrite. EditedText approves the reviewer's own version, which passes the deterministic rules again.
+/// </summary>
+public sealed record ReviewRequest(bool Approved, string? Reason, string Reviewer, string? EditedText = null);
 
 /// <summary>What the policy decided and why. Outcome: Block, NeedsHuman or AutoSend.</summary>
 public sealed record DecisionDto(string Outcome, string Stage, string Reason);

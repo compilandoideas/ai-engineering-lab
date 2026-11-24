@@ -377,6 +377,12 @@
           },
           "reviewer": {
             "type": "string"
+          },
+          "editedText": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

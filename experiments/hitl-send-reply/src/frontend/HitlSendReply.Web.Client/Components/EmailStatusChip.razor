@@ -1,7 +1,13 @@
-<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="ColorOf(Status)" data-testid="email-status">@Status</MudChip>
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(Lost ? Color.Default : ColorOf(Status))"
+         data-testid="email-status" data-status="@Status">@(Lost ? Text.RunLost : Text.Name(Status))</MudChip>
 
 @code {
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
     [Parameter, EditorRequired] public EmailStatus Status { get; set; }
+
+    /// <summary>The run is gone (the Agent API restarted): the status is the last one known.</summary>
+    [Parameter] public bool Lost { get; set; }
 
     private static Color ColorOf(EmailStatus status) => status switch
     {

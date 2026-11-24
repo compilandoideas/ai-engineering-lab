@@ -6,16 +6,16 @@
     {
         <MudTimelineItem Color="ColorOf(entry)" Size="Size.Small">
             <div class="d-flex flex-wrap align-center gap-2">
-                <MudText Typo="Typo.body2"><b>@entry.Event</b></MudText>
+                <MudText Typo="Typo.body2" data-event="@entry.Event"><b>@Text.Name(entry.Event)</b></MudText>
                 @if (entry.Outcome is not null)
                 {
-                    <MudChip T="string" Size="Size.Small" Color="Outcomes.ColorOf(entry.Outcome)">@entry.Outcome · @entry.Stage</MudChip>
+                    <MudChip T="string" Size="Size.Small" Color="Outcomes.ColorOf(entry.Outcome)">@Text.Name(entry.Outcome) · @Text.Name(entry.Stage)</MudChip>
                 }
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">@entry.At.ToLocalTime().ToString("HH:mm:ss") · @entry.Actor · #@Short(entry.TextHash)</MudText>
             </div>
             @if (!string.IsNullOrEmpty(entry.Reason))
             {
-                <MudText Typo="Typo.body2" Class="mud-text-secondary">@entry.Reason</MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">@Text.Reason(entry.Reason)</MudText>
             }
             @if (entry.Recipient is not null)
             {
@@ -33,7 +33,7 @@
     private static Color ColorOf(AuditEntryDto entry) => entry.Event switch
     {
         "sent" => Color.Success,
-        "human-approved" => Color.Primary,
+        "human-approved" or "human-edited" => Color.Primary,
         "human-rejected" or "send-refused" => Color.Error,
         "send-duplicate" => Color.Default,
         _ => Outcomes.ColorOf(entry.Outcome),

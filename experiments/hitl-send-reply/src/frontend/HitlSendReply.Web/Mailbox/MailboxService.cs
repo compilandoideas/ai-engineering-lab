@@ -29,7 +29,7 @@ public sealed partial class MailboxService(
         await db.SaveChangesAsync(cancellationToken);
 
         await NotifyAsync(email, cancellationToken);
-        return email.ToDto();
+        return (await ToRowsAsync([email], cancellationToken))[0];
     }
 
     /// <summary>Null when the email does not exist; unchanged when it was already handed over.</summary>
@@ -46,7 +46,7 @@ public sealed partial class MailboxService(
             await NotifyAsync(email, cancellationToken);
         }
 
-        return email.ToDto();
+        return (await ToRowsAsync([email], cancellationToken))[0];
     }
 
     public async Task<EmailRowDto?> GetAsync(Guid id, CancellationToken cancellationToken)
@@ -58,7 +58,7 @@ public sealed partial class MailboxService(
         }
 
         await RefreshAsync([email], cancellationToken);
-        return email.ToDto();
+        return (await ToRowsAsync([email], cancellationToken))[0];
     }
 
     public async Task<EmailPageDto> ListAsync(EmailQuery query, CancellationToken cancellationToken)
@@ -77,7 +77,29 @@ public sealed partial class MailboxService(
             .ToListAsync(cancellationToken);
 
         await RefreshAsync(page, cancellationToken);
-        return new EmailPageDto(page.Select(e => e.ToDto()).ToList(), total);
+        return new EmailPageDto(await ToRowsAsync(page, cancellationToken), total);
+    }
+
+    /// <summary>
+    /// Reads back every run still in progress, so a reply waiting for a person lands in
+    /// email_replies even when nobody has the inbox open. Called by <see cref="PendingReplyTracker"/>.
+    /// </summary>
+    public async Task RefreshInProgressAsync(CancellationToken cancellationToken)
+    {
+        var emails = await db.Emails
+            .Where(e => e.RunId != null && InProgress.Contains(e.Status) && (e.Detail == null || e.Detail != RunGone))
+            .OrderBy(e => e.ReceivedAt).Take(50)
+            .ToListAsync(cancellationToken);
+        await RefreshAsync(emails, cancellationToken);
+    }
+
+    // Each row carries its latest reply: the one waiting now, or the last one decided.
+    private async Task<List<EmailRowDto>> ToRowsAsync(IReadOnlyList<InboundEmail> emails, CancellationToken cancellationToken)
+    {
+        var ids = emails.Select(e => e.Id).ToList();
+        var replies = await db.Replies.AsNoTracking().Where(r => ids.Contains(r.EmailId)).ToListAsync(cancellationToken);
+        var latest = replies.GroupBy(r => r.EmailId).ToDictionary(g => g.Key, g => g.MaxBy(r => r.CreatedAt)!);
+        return emails.Select(e => e.ToDto() with { Reply = latest.GetValueOrDefault(e.Id)?.ToDto() }).ToList();
     }
 
     private static IQueryable<InboundEmail> Sort(IQueryable<InboundEmail> emails, string? sort, bool descending) =>
@@ -134,11 +156,16 @@ public sealed partial class MailboxService(
                     email.Detail = RunGone;
                     changed = true;
                 }
-                else if (state is not null && (state.Status != email.Status || state.Error != email.Detail))
+                else if (state is not null)
                 {
-                    email.Status = state.Status;
-                    email.Detail = state.Error;
-                    changed = true;
+                    if (state.Status != email.Status || state.Error != email.Detail)
+                    {
+                        email.Status = state.Status;
+                        email.Detail = state.Error;
+                        changed = true;
+                    }
+
+                    changed |= await KeepRepliesAsync(email, state, cancellationToken);
                 }
             }
             catch (HttpRequestException ex)
@@ -151,6 +178,43 @@ public sealed partial class MailboxService(
         {
             await db.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    // A review the policy sent to a person is stored once as Pending; a person's verdict moves it
+    // to Approved or Rejected, only from Pending, so the first decision is the one kept.
+    private async Task<bool> KeepRepliesAsync(InboundEmail email, RunState state, CancellationToken cancellationToken)
+    {
+        var known = await db.Replies.Where(r => r.EmailId == email.Id).ToDictionaryAsync(r => r.CallId, cancellationToken);
+        var changed = false;
+        foreach (var pending in state.Pending ?? [])
+        {
+            if (!known.ContainsKey(pending.CallId))
+            {
+                var reply = new EmailReply
+                {
+                    EmailId = email.Id,
+                    RunId = email.RunId!,
+                    CallId = pending.CallId,
+                    Recipient = pending.Recipient,
+                    Text = pending.Text,
+                    CreatedAt = clock.GetUtcNow(),
+                };
+                db.Replies.Add(reply);
+                known[pending.CallId] = reply;
+                changed = true;
+            }
+        }
+
+        // A verdict for a review never seen pending has no text to keep, so it is skipped.
+        foreach (var verdict in state.Verdicts ?? [])
+        {
+            if (known.TryGetValue(verdict.CallId, out var reply))
+            {
+                changed |= reply.Decide(verdict.Approved, verdict.Reason, verdict.Reviewer, verdict.At, verdict.Edited, verdict.FinalText);
+            }
+        }
+
+        return changed;
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Email {EmailId} could not be handed to the agent: {Error}")]

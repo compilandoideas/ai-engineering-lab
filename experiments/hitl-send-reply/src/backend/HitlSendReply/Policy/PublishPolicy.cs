@@ -18,6 +18,47 @@ public sealed class PublishPolicy(
     PublishPolicyOptions options,
     IReviewHistory? reviews = null)
 {
+    /// <summary>
+    /// The checks a reviewer's own text must pass: ticket, permissions, duplicate, a text already
+    /// rejected, and the order facts. Null when it passes. No judge: a person wrote it and answers for it.
+    /// </summary>
+    public PolicyDecision? CheckHumanEdit(ReplyRequest request)
+    {
+        var ticket = tickets.Find(request.TicketId);
+        if (ticket is null)
+        {
+            return PolicyDecision.Block(PolicyStage.Ticket, $"Ticket '{request.TicketId}' does not exist.");
+        }
+
+        if (ticket.IsClosed)
+        {
+            return PolicyDecision.Block(PolicyStage.Ticket, $"Ticket {ticket.Id} is closed.");
+        }
+
+        if (!permissions.CanReply(options.AgentName, ticket.Channel))
+        {
+            return PolicyDecision.Block(PolicyStage.Permissions, $"Agent '{options.AgentName}' is not allowed to reply on {ticket.Channel}.");
+        }
+
+        if (outbox.HasSent(request.Key))
+        {
+            return PolicyDecision.Block(PolicyStage.Duplicate, "This exact text was already sent on this ticket.");
+        }
+
+        if (reviews?.WasRejected(request.Key) == true)
+        {
+            return PolicyDecision.Block(PolicyStage.PriorRejection, "A reviewer already rejected this exact text.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Text))
+        {
+            return PolicyDecision.Block(PolicyStage.Facts, "Empty reply.");
+        }
+
+        var facts = FactChecker.Check(request.Text, ticket.Order, ticket.Language);
+        return facts.Verified ? null : PolicyDecision.Block(PolicyStage.Facts, string.Join(" ", facts.Issues));
+    }
+
     public async Task<PolicyDecision> EvaluateAsync(ReplyRequest request, CancellationToken cancellationToken = default)
     {
         try

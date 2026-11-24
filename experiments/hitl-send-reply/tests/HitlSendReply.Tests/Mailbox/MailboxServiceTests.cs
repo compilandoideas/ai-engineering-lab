@@ -191,6 +191,88 @@ public sealed class MailboxServiceTests : IAsyncLifetime
         Assert.Equal(4, refunds.Total);
     }
 
+    [DockerFact]
+    public async Task A_reply_waiting_for_a_person_is_kept_as_pending_once()
+    {
+        _runs.Pending.Add(new PendingReply("call-1", "li.wang@example.com", "We are sending a new package."));
+        await using var db = NewDb();
+        var service = Service(db);
+
+        var row = await service.SubmitAsync(Compose(), CancellationToken.None);
+        await service.RefreshInProgressAsync(CancellationToken.None);
+        await service.GetAsync(row.Id, CancellationToken.None);
+
+        Assert.Equal(ReplyStatus.Pending, row.Reply?.Status);
+        Assert.Equal("We are sending a new package.", row.Reply?.Text);
+        await using var check = NewDb();
+        var stored = await check.Replies.SingleAsync();
+        Assert.Equal((row.Id, "call-1", "run-1"), (stored.EmailId, stored.CallId, stored.RunId));
+    }
+
+    [DockerFact]
+    public async Task An_approved_reply_keeps_who_approved_it_and_when()
+    {
+        _runs.Pending.Add(new PendingReply("call-1", "li.wang@example.com", "We are sending a new package."));
+        await using var db = NewDb();
+        var service = Service(db);
+        var row = await service.SubmitAsync(Compose(), CancellationToken.None);
+
+        var at = DateTimeOffset.Parse("2026-11-24T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+        _runs.Pending.Clear();
+        _runs.Verdicts.Add(new ReplyVerdict("call-1", true, null, "ana", at));
+        _runs.Status = EmailStatus.Sent;
+        var after = await service.GetAsync(row.Id, CancellationToken.None);
+
+        Assert.Equal(EmailStatus.Sent, after!.Status);
+        Assert.Equal((ReplyStatus.Approved, "ana", at), (after.Reply!.Status, after.Reply.Reviewer, after.Reply.DecidedAt));
+    }
+
+    [DockerFact]
+    public async Task A_rejected_reply_keeps_the_reason_and_the_rewrite_waits_as_a_new_reply()
+    {
+        _runs.Pending.Add(new PendingReply("call-1", "li.wang@example.com", "First draft."));
+        await using var db = NewDb();
+        var service = Service(db);
+        var row = await service.SubmitAsync(Compose(), CancellationToken.None);
+
+        _runs.Pending.Clear();
+        _runs.Pending.Add(new PendingReply("call-2", "li.wang@example.com", "Second draft."));
+        _runs.Verdicts.Add(new ReplyVerdict("call-1", false, "Do not promise a date.", "ana", DateTimeOffset.UtcNow));
+        var after = await service.GetAsync(row.Id, CancellationToken.None);
+
+        Assert.Equal(("Second draft.", ReplyStatus.Pending), (after!.Reply!.Text, after.Reply.Status));
+        await using var check = NewDb();
+        var first = await check.Replies.SingleAsync(r => r.CallId == "call-1");
+        Assert.Equal((ReplyStatus.Rejected, "Do not promise a date."), (first.Status, first.Reason));
+        Assert.Equal(2, await check.Replies.CountAsync());
+    }
+
+    [DockerFact]
+    public async Task An_edited_reply_keeps_the_draft_the_text_sent_and_the_mark()
+    {
+        _runs.Pending.Add(new PendingReply("call-1", "li.wang@example.com", "Agent draft."));
+        await using var db = NewDb();
+        var service = Service(db);
+        var row = await service.SubmitAsync(Compose(), CancellationToken.None);
+
+        _runs.Pending.Clear();
+        _runs.Verdicts.Add(new ReplyVerdict("call-1", true, null, "ana", DateTimeOffset.UtcNow, Edited: true, FinalText: "Ana's version."));
+        _runs.Status = EmailStatus.Sent;
+        var reply = (await service.GetAsync(row.Id, CancellationToken.None))!.Reply!;
+
+        Assert.Equal((ReplyStatus.Approved, true, "Agent draft.", "Ana's version."), (reply.Status, reply.Edited, reply.Text, reply.FinalText));
+    }
+
+    [Fact]
+    public void The_first_decision_on_a_reply_is_the_one_kept()
+    {
+        var reply = new EmailReply { RunId = "run-1", CallId = "call-1", Recipient = "a@example.com", Text = "Hi" };
+
+        Assert.True(reply.Decide(true, null, "ana", DateTimeOffset.UtcNow));
+        Assert.False(reply.Decide(false, "late", "luis", DateTimeOffset.UtcNow));
+        Assert.Equal((ReplyStatus.Approved, "ana"), (reply.Status, reply.Reviewer));
+    }
+
     private sealed class FakeNotifier : IInboundEmailNotifier
     {
         public List<InboundEmailRequest> Received { get; } = [];
@@ -210,7 +292,11 @@ public sealed class MailboxServiceTests : IAsyncLifetime
 
         public string? Error { get; set; }
 
+        public List<PendingReply> Pending { get; } = [];
+
+        public List<ReplyVerdict> Verdicts { get; } = [];
+
         public Task<RunState?> ReadAsync(string runId, CancellationToken cancellationToken) =>
-            Task.FromResult(Status is { } status ? new RunState(status, Error) : null);
+            Task.FromResult(Status is { } status ? new RunState(status, Error, [.. Pending], [.. Verdicts]) : null);
     }
 }

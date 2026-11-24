@@ -67,6 +67,36 @@ public class SupportRunnerResumeTests
     }
 
     [Fact]
+    public async Task An_edit_sends_the_reviewers_text_and_names_the_reviewer()
+    {
+        var pipeline = Build("T-1002", Risky);
+        var run = await pipeline.Runner.StartAsync("T-1002", "Damaged package.");
+
+        await pipeline.Runner.ResumeAsync(run, run.PendingReviews[0].CallId, HumanVerdict.Edit("reviewer@test", Safe));
+
+        Assert.Equal(ApprovalRunStatus.Completed, run.Status);
+        Assert.Equal(Safe, Assert.Single(pipeline.Outbox.Sent).Text);
+        Assert.Contains(pipeline.Audit.Entries, e => e.Event == "human-edited" && e.Actor == "reviewer@test");
+        Assert.Contains(pipeline.Audit.Entries, e => e.Event == "sent" && e.Actor == "reviewer@test");
+    }
+
+    [Fact]
+    public async Task An_edit_that_breaks_the_order_facts_is_refused_and_the_review_stays_pending()
+    {
+        var pipeline = Build("T-1002", Risky);
+        var run = await pipeline.Runner.StartAsync("T-1002", "Damaged package.");
+        var callId = run.PendingReviews[0].CallId;
+
+        var refused = await Assert.ThrowsAsync<EditRefusedException>(() =>
+            pipeline.Runner.ResumeAsync(run, callId, HumanVerdict.Edit("reviewer@test", "Your order #A-9999 was delivered on November 7.")));
+
+        Assert.Equal(PolicyStage.Facts, refused.Decision.Stage);
+        Assert.Equal(ApprovalRunStatus.AwaitingReview, run.Status);
+        Assert.Equal(callId, Assert.Single(run.PendingReviews).CallId);
+        Assert.Empty(pipeline.Outbox.Sent);
+    }
+
+    [Fact]
     public async Task A_verified_reply_completes_without_stopping()
     {
         var pipeline = Build("T-1001", Verified);

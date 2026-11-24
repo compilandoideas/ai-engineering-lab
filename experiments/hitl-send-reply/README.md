@@ -36,7 +36,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Core minimal API, a Blazor Web App (WebAssembly, MudBlazor) behind a YARP forwarder, and xUnit.
 Fictional data in **English and Spanish**, scripted model for tests, real model optional.
 
-> Status: experiment. The approval pipeline is compiled and tested (159/159 tests, see
+> Status: experiment. The approval pipeline is compiled and tested (168/168 tests, see
 > [evidence](evidence/)). Real-model runs (gpt-4.1-mini and gpt-4.1, agent + judge) are in
 > [`evidence/`](evidence/): a first live run, the fixes it led to, a live run after the fixes
 > ([`live-2026-11-19-after-fixes`](evidence/live-2026-11-19-after-fixes/)) and a judge study on 100
@@ -301,7 +301,7 @@ Plus: a rejected draft is rewritten, the new call goes through the whole policy 
 human sees it; no
 judge output can turn a failed deterministic check into auto-send; dataset sanity checks.
 
-Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (159 passed) and
+Evidence: [`evidence/test-run.txt`](evidence/test-run.txt) (168 passed) and
 [`evidence/screenshots/web/`](evidence/screenshots/web/), saved by `scripts/smoke.mjs`, which runs
 scenarios 1 and 2 through the web screen in a real browser, then an email through the inbox to
 an approved reply.
@@ -563,7 +563,9 @@ New email (MudDialog) ─► Web server: save InboundEmail in Postgres (status R
                          (run status Starting ─► policy ─► auto-send / human / block, or Failed)
                               │
                               ▼
-Inbox grid (MudDataGrid, server paging) shows the run: AwaitingReview ─► click ─► review ─► Sent
+Inbox, like a mail client: the list on the left, the open email on the right and, under it,
+the agent's reply. When the policy sends it to a person, the reply is kept in email_replies
+(Pending) until the person approves, edits or rejects it.
 ```
 
 - **Save first, then notify.** If the Agent API cannot be reached, the email stays in the inbox as
@@ -577,6 +579,12 @@ Inbox grid (MudDataGrid, server paging) shows the run: AwaitingReview ─► cli
   (`A_forged_sender_cannot_change_who_receives_the_reply`).
 - **Without a model key**, the designed scenario for the matched ticket plays the agent, so the
   whole flow works offline. With a key, the real agent and judge answer.
+- **The reply waiting for a person is kept in Postgres.** `email_replies` holds one row per review
+  the policy asked for: the agent's draft, the status (`Pending`, `Approved`, `Rejected`), who
+  decided, the reason, when, the text that reached the customer and whether the person edited it.
+  A rejection makes the agent rewrite, and the rewrite is a new row. Only a pending row takes a
+  decision, so the first one is the one kept. A background service (`PendingReplyTracker`) reads
+  the runs in progress every 2 seconds, so a reply is stored even when nobody has the inbox open.
 - **Rows follow the run.** While a row is in progress the page reloads every 2 seconds (no
   SignalR needed). The API keeps runs in memory: after it restarts, older rows keep their last
   status and say why.
@@ -590,11 +598,25 @@ the API process; a queue is the next step when runs must survive a restart, and 
 
 ## The review screen
 
-The screen only renders what the API returns: the ticket and the customer's message; the agent's
-draft, where it would go (taken from the ticket) and the policy trace stage by stage; the decision
-(approve, or reject with a required reason); then the result and the audit trail.
+The review lives under the email in the inbox: one sentence on top says why the reply stopped and
+what is asked ("the judge found that the reply makes a commitment… it needs your approval"), then
+the agent's draft, where it goes (taken from the ticket) and three actions:
 
-![Scenario 2 waiting for a person](evidence/screenshots/web/scenario2-pending-1440-light.png)
+- **Approve** sends exactly the text shown.
+- **Edit** sends the reviewer's own version. It goes through the deterministic rules again
+  (ticket, permissions, duplicate, a text already rejected, order facts); the judge does not read
+  it, because a person wrote it and answers for it. A version that breaks a rule is not sent
+  (422) and the review stays open. The framework replays the agent's own call on approval, so the
+  edit is sent through the same tool and ledger check, and the agent's call is answered as replaced.
+- **Reject** needs a reason: the agent reads it to rewrite, and the rewrite goes to a person too.
+
+"Why it stopped and what happened" opens the policy trace stage by stage and the audit trail. Stage,
+outcome and status names are translated on the screen; the API keeps its English names because the
+audit and the agent use them.
+
+![A reply waiting for a person in the inbox](evidence/screenshots/web/inbox-awaiting-1440-light.png)
+
+The Review page (`/`) is still where the seven designed scenarios are run by hand.
 
 The trace is derived from the stage that decided: the policy runs its checks in a fixed order and
 stops at the first one that decides, so earlier stages passed and later ones were not reached. The
@@ -618,9 +640,10 @@ src/backend/HitlSendReply.Api/    the Agent API: never referenced by the system
 src/backend/HitlSendReply.Evals/  judge measurement over data/drafts.<lang>.jsonl and heldout/
 src/backend/HitlSendReply.Api/Inbound/    the inbound-email webhook: ticket matching, idempotent run start
 src/frontend/HitlSendReply.Web/        serves the client, forwards /api with YARP (future BFF)
-  Mailbox/      simulated inbox: InboundEmail, MailboxDbContext + migration, webhook notifier, endpoints
+  Mailbox/      simulated inbox: InboundEmail, EmailReply, MailboxDbContext + migrations, webhook notifier,
+                PendingReplyTracker, endpoints
 src/frontend/HitlSendReply.Web.Client/ the screens: Pages/ (Review, Inbox), Components/, Api/, Mailbox/, Localization/
-tests/HitlSendReply.Tests/        159 tests, one folder per area (scenario and dataset tests run in EN and ES;
+tests/HitlSendReply.Tests/        168 tests, one folder per area (scenario and dataset tests run in EN and ES;
                                   Mailbox/ runs against Postgres in Testcontainers; skipped, with the reason, without Docker)
 HitlSendReply.AppHost/            Aspire: postgres (database "mailbox"), api, web
 HitlSendReply.ServiceDefaults/    telemetry, /health and /alive, service discovery, resilience

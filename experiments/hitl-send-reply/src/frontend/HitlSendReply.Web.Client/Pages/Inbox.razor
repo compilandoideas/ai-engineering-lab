@@ -1,4 +1,5 @@
 @page "/inbox"
+@page "/inbox/{EmailId:guid}"
 @implements IAsyncDisposable
 @inject MailboxClient Mailbox
 @inject IDialogService Dialogs
@@ -7,30 +8,116 @@
 
 <PageTitle>@Text.InboxTitle</PageTitle>
 
-<div class="d-flex flex-wrap align-center gap-4 mb-6">
-    <div class="flex-grow-1">
-        <MudText Typo="Typo.h4" GutterBottom="true">@Text.InboxTitle</MudText>
-        <MudText Typo="Typo.body1" Class="mud-text-secondary">@Text.InboxSubtitle</MudText>
-    </div>
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
-               Disabled="_sending" OnClick="ComposeAsync" data-testid="compose">@Text.Compose</MudButton>
-</div>
+@* Laid out like a mail client: the list on the left, the open email on the right and, under it,
+   the agent's reply with the review. On a phone the list and the email take turns. *@
+<MudGrid Spacing="4">
+    <MudItem xs="12" md="4" Class="@(Selected is null ? "" : "d-none d-md-flex")">
+        <MudPaper Outlined="true" Class="mail-list" data-testid="inbox">
+            <div class="d-flex align-center gap-2 pa-3">
+                <MudTextField T="string" Value="_search" ValueChanged="OnSearchAsync" Placeholder="@Text.Search" Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Immediate="true" Margin="Margin.Dense"
+                              Variant="Variant.Outlined" Class="mt-0" data-testid="inbox-search" />
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit"
+                           Disabled="_sending" OnClick="ComposeAsync" data-testid="compose">@Text.Compose</MudButton>
+            </div>
+            @if (_sending)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            }
+            <MudDivider />
+            @if (_emails.Count == 0)
+            {
+                <MudText Class="mud-text-secondary pa-4">@Text.NoEmails</MudText>
+            }
+            @foreach (var email in _emails)
+            {
+                <a href="inbox/@email.Id" class="@($"mail-row {(email.Id == EmailId ? "selected" : "")}")" data-testid="mail-row" data-subject="@email.Subject">
+                    <div class="d-flex align-center gap-2">
+                        <MudText Typo="Typo.body2" Class="mail-from flex-grow-1"><b>@email.From</b></MudText>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@When(email.ReceivedAt)</MudText>
+                    </div>
+                    <MudText Typo="Typo.body2" Class="mail-subject">@email.Subject</MudText>
+                    <div class="d-flex flex-wrap align-center gap-1 mt-1">
+                        <EmailStatusChip Status="email.Status" Lost="Lost(email)" />
+                        @* A lost run's reply can no longer be decided: "waiting for a person" would be false. *@
+                        @if (email.Reply is { } reply && !(Lost(email) && reply.Status == ReplyStatus.Pending))
+                        {
+                            <ReplyStatusChip Reply="reply" />
+                        }
+                    </div>
+                </a>
+            }
+        </MudPaper>
+    </MudItem>
 
-@if (_sending)
-{
-    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
-}
+    <MudItem xs="12" md="8" Class="@(Selected is null ? "d-none d-md-flex" : "")">
+        <MudPaper Outlined="true" Class="pa-6 mail-pane" data-testid="mail-pane">
+            @if (Selected is not { } email)
+            {
+                <div class="d-flex flex-column align-center justify-center mud-text-secondary" style="min-height: 320px">
+                    <MudIcon Icon="@Icons.Material.Outlined.Email" Size="Size.Large" Class="mb-2" />
+                    <MudText>@Text.PickEmail</MudText>
+                </div>
+            }
+            else
+            {
+                <MudButton Href="inbox" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Class="d-md-none mb-2">@Text.BackToInbox</MudButton>
+                <MudText Typo="Typo.h5" Class="mb-2" data-testid="mail-subject">@email.Subject</MudText>
+                <div class="d-flex flex-wrap align-center gap-2 mb-4">
+                    @if (email.TicketId is { } ticket)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.ConfirmationNumber">@ticket</MudChip>
+                    }
+                    <EmailStatusChip Status="email.Status" Lost="Lost(email)" />
+                </div>
 
-<InboxGrid @ref="_grid" Text="Text" OnOpen="Open" />
+                <div class="d-flex align-center gap-3 mb-3">
+                    <MudAvatar Size="Size.Medium" Color="Color.Primary" Variant="Variant.Outlined">@Initial(email.From)</MudAvatar>
+                    <div class="flex-grow-1">
+                        <MudText Typo="Typo.body2"><b>@email.From</b></MudText>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.ToLabel: @email.To</MudText>
+                    </div>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@email.ReceivedAt.ToLocalTime().ToString("dd MMM HH:mm")</MudText>
+                </div>
+                <div class="mail-body pa-4 mb-6">
+                    <MudText Typo="Typo.body1" Class="draft-text" data-testid="mail-body">@email.Body</MudText>
+                </div>
+
+                @if (email.Status is EmailStatus.NotifyFailed or EmailStatus.Received)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">@email.Detail</MudAlert>
+                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh"
+                               OnClick="() => RetryAsync(email)" data-testid="retry">@Text.Retry</MudButton>
+                }
+                else if (email.RunId is null || email.Detail is not null)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">@email.Detail</MudAlert>
+                }
+                else
+                {
+                    <MudDivider Class="mb-4" />
+                    <MailReply RunId="@email.RunId" OnDecided="ReloadAsync" />
+                }
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
 
 @code {
     [CascadingParameter] public Labels Text { get; set; } = Labels.En;
 
-    private InboxGrid _grid = default!;
+    [Parameter] public Guid? EmailId { get; set; }
+
+    private IReadOnlyList<EmailRowDto> _emails = [];
+    private string? _search;
     private bool _sending;
     private readonly CancellationTokenSource _stop = new();
 
-    // While a run on the page is still moving, the grid reloads every 2 s. No SignalR needed.
+    private EmailRowDto? Selected => _emails.FirstOrDefault(e => e.Id == EmailId);
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    // While an email is still moving (with the agent, waiting for a person), the list reloads every 2 s.
     protected override void OnAfterRender(bool firstRender)
     {
         if (firstRender)
@@ -46,9 +133,9 @@
         {
             while (await timer.WaitForNextTickAsync(_stop.Token))
             {
-                if (_grid.HasRowsInProgress && !_sending)
+                if (!_sending && _emails.Any(InProgress))
                 {
-                    await InvokeAsync(_grid.ReloadAsync);
+                    await InvokeAsync(ReloadAsync);
                 }
             }
         }
@@ -56,6 +143,31 @@
         {
             // Page closed.
         }
+    }
+
+    // The Agent API keeps runs in memory: after a restart the email's run is gone and cannot be reviewed.
+    private static bool Lost(EmailRowDto e) => e.Status is EmailStatus.Notified or EmailStatus.AwaitingReview && e.Detail is not null;
+
+    private static bool InProgress(EmailRowDto e) =>
+        e.Status is EmailStatus.Notified or EmailStatus.AwaitingReview && e.Detail is null;
+
+    private async Task ReloadAsync()
+    {
+        try
+        {
+            _emails = (await Mailbox.ListAsync(_search, null, true, 0, 50, _stop.Token)).Items;
+            StateHasChanged();
+        }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task OnSearchAsync(string? value)
+    {
+        _search = value;
+        await ReloadAsync();
     }
 
     private async Task ComposeAsync()
@@ -70,10 +182,12 @@
 
         _sending = true;
         StateHasChanged();
+        EmailRowDto? row = null;
         try
         {
-            var row = await Mailbox.SubmitAsync(request);
-            Snackbar.Add($"{Text.EmailSaved}: {row?.Status}", row?.Status == EmailStatus.NotifyFailed ? Severity.Warning : Severity.Success);
+            row = await Mailbox.SubmitAsync(request);
+            Snackbar.Add($"{Text.EmailSaved}: {Text.Name(row?.Status ?? EmailStatus.Received)}",
+                row?.Status == EmailStatus.NotifyFailed ? Severity.Warning : Severity.Success);
         }
         catch (HttpRequestException ex)
         {
@@ -84,10 +198,26 @@
             _sending = false;
         }
 
-        await _grid.ReloadAsync();
+        await ReloadAsync();
+        if (row is not null)
+        {
+            Navigation.NavigateTo($"inbox/{row.Id}");
+        }
     }
 
-    private void Open(EmailRowDto row) => Navigation.NavigateTo($"runs/{row.RunId}");
+    private async Task RetryAsync(EmailRowDto row)
+    {
+        await Mailbox.RetryAsync(row.Id);
+        await ReloadAsync();
+    }
+
+    private static string Initial(string from) => from.Length > 0 ? from[..1].ToUpperInvariant() : "?";
+
+    private static string When(DateTimeOffset at)
+    {
+        var local = at.ToLocalTime();
+        return local.Date == DateTime.Today ? local.ToString("HH:mm") : local.ToString("dd MMM");
+    }
 
     public async ValueTask DisposeAsync()
     {

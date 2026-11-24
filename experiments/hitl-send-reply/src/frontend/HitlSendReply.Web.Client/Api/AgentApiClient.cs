@@ -32,7 +32,7 @@ public sealed class AgentApiClient(HttpClient http)
         }
 
         var problem = await TryReadProblemAsync(response, cancellationToken);
-        return new ApiResult<T>(default, problem?.Detail ?? problem?.Title ?? $"HTTP {(int)response.StatusCode}");
+        return new ApiResult<T>(default, problem?.Detail ?? problem?.Title ?? $"HTTP {(int)response.StatusCode}", (int)response.StatusCode);
     }
 
     private static async Task<Problem?> TryReadProblemAsync(HttpResponseMessage response, CancellationToken cancellationToken)
@@ -50,4 +50,5 @@ public sealed class AgentApiClient(HttpClient http)
     private sealed record Problem(string? Title, string? Detail);
 }
 
-public sealed record ApiResult<T>(T? Value, string? Error);
+/// <summary>A call's value, or why it failed and the HTTP status (422: an edited text broke a rule).</summary>
+public sealed record ApiResult<T>(T? Value, string? Error, int? Status = null);

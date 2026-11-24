@@ -14,7 +14,7 @@
     }
     else
     {
-        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-2">@Text.NotSent @WhyNotSent</MudAlert>
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-2">@Text.NotSent @Text.Reason(WhyNotSent)</MudAlert>
     }
     @if (!string.IsNullOrWhiteSpace(Run.AgentReply))
     {
