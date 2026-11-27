@@ -13,3 +13,6 @@ Conventions:
 - `experiments/<name>/` is self-contained: code, tests, README, data.
 - Fictional data and simulated providers by default; a real model is optional and configurable.
 - Results in a README come from a run that produced a file in the repo, or they are not there.
+
+Starting an experiment: copy a template from [templates/](templates/) (`lab-simple` by default,
+`lab-clean` when it exposes an API). Templates are copied, never referenced.

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- The host: composition only. A Python port (FastAPI) replaces this project. -->
+  <ItemGroup>
+    <ProjectReference Include="..\LabExperiment.Infrastructure\LabExperiment.Infrastructure.csproj" />
+    <ProjectReference Include="..\LabExperiment.Presentation\LabExperiment.Presentation.csproj" />
+<!--#if (aspire) -->
+    <ProjectReference Include="..\..\LabExperiment.ServiceDefaults\LabExperiment.ServiceDefaults.csproj" />
+<!--#endif -->
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LabExperiment.Tests" />
+  </ItemGroup>
+</Project>

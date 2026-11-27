@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "AI Engineering Lab",
+  "classifications": ["Lab", "Console", "Experiment"],
+  "identity": "AiEngineeringLab.Templates.Simple",
+  "name": "AI Engineering Lab: simple experiment",
+  "description": "Console + Core + xUnit tests, with Result/Error and a scripted chat client. The default for a new experiment.",
+  "shortName": "lab-simple",
+  "sourceName": "LabExperiment",
+  "preferNameDirectory": true,
+  "tags": { "language": "C#", "type": "solution" },
+  "sources": [{ "exclude": ["**/bin/**", "**/obj/**", ".template.config/**"] }]
+}

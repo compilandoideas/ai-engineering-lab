@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Presentation: minimal API endpoints (one IEndpoint per area) and Result to ProblemDetails.
+       It sends commands and queries to Application and knows no adapter. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LabExperiment.Application\LabExperiment.Application.csproj" />
+  </ItemGroup>
+</Project>

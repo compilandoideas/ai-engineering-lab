@@ -1,0 +1,42 @@
+name: templates
+
+on:
+  push:
+    branches: [main]
+    paths: ["templates/**", ".github/workflows/templates.yml"]
+  pull_request:
+    paths: ["templates/**", ".github/workflows/templates.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  generate-build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - template: lab-simple
+            args: ""
+          - template: lab-clean
+            args: ""
+          - template: lab-clean
+            args: "--aspire"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Install templates
+        run: |
+          dotnet new install ./templates/lab-simple
+          dotnet new install ./templates/lab-clean
+      - name: Generate
+        run: dotnet new ${{ matrix.template }} -n Smoke -o "$RUNNER_TEMP/smoke" ${{ matrix.args }}
+      - name: Template name fully replaced
+        run: "! grep -rIil labexperiment \"$RUNNER_TEMP/smoke\""
+      - name: Build
+        run: dotnet build "$RUNNER_TEMP/smoke" -warnaserror
+      - name: Test
+        run: dotnet test "$RUNNER_TEMP/smoke" --no-build
