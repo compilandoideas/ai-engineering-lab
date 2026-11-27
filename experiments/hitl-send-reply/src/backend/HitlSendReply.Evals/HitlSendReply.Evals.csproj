@@ -9,8 +9,8 @@
     <ProjectReference Include="..\HitlSendReply.Api\HitlSendReply.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="data\**" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\..\heldout\*.jsonl" Link="data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The labeled drafts live in eval/datasets: drafts.<lang> (development) and blind.<lang> (never used to tune). -->
+    <None Include="..\..\..\eval\datasets\*.jsonl" Link="data\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="HitlSendReply.Tests" />

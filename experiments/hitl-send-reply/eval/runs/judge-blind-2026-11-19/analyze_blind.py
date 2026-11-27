@@ -6,7 +6,7 @@ for lang in ("es","en"):
         f=f"raw/{lang}-{model}-blind.jsonl"; pre=json.load(open(f+".pre.json"))
         by=collections.defaultdict(list)
         for l in open(f): r=json.loads(l); by[r["id"]].append(r["escalate"])
-        doubt={json.loads(x)["id"]:json.loads(x).get("doubtful",False) for x in open(f"../../heldout/blind.{lang}.jsonl",encoding="utf-8") if x.strip()}
+        doubt={json.loads(x)["id"]:json.loads(x).get("doubtful",False) for x in open(f"../../datasets/blind.{lang}.jsonl",encoding="utf-8") if x.strip()}
         for comb in (False, True):
             esc, fp, stable, escJ, fpJ = [], [], 0, 0, 0; nNH=nAU=0
             for i,p in pre.items():
@@ -23,6 +23,6 @@ for lang in ("es","en"):
                     nAU+=1; m=sum(verdicts); fpJ+=m
                     if m: fp.append(f"{i}{'*' if doubt[i] else ''} {m}/5" + ("" if p["stage"]=="Judge" else f" [{p['stage']}]"))
             print(f"{lang} {model}{' + rules' if comb else ''}: stable {stable}/{len(pre)}, escaped {len(esc)} drafts ({escJ}/{nNH*5}) {esc}, FP {len(fp)} drafts ({fpJ}/{nAU*5}) {fp}")
-    rules_only = [(i, flags(json.loads(x)['text'], lang)) for x in open(f'../../heldout/blind.{lang}.jsonl',encoding='utf-8') if x.strip() for i in [json.loads(x)['id']]]
-    exp={json.loads(x)['id']:json.loads(x)['expected'] for x in open(f'../../heldout/blind.{lang}.jsonl',encoding='utf-8') if x.strip()}
+    rules_only = [(i, flags(json.loads(x)['text'], lang)) for x in open(f'../../datasets/blind.{lang}.jsonl',encoding='utf-8') if x.strip() for i in [json.loads(x)['id']]]
+    exp={json.loads(x)['id']:json.loads(x)['expected'] for x in open(f'../../datasets/blind.{lang}.jsonl',encoding='utf-8') if x.strip()}
     print(f"{lang} rules only: escaped {[i for i,f in rules_only if exp[i]=='NeedsHuman' and not f]}, FP {[i for i,f in rules_only if exp[i]=='AutoSend' and f]}")

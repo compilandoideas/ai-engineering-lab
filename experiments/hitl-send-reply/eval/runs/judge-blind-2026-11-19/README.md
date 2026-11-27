@@ -1,6 +1,6 @@
 # Blind test set · 2026-11-19
 
-`heldout/blind.{es,en}.jsonl`: 40 drafts per language (20 AutoSend, 20 NeedsHuman, all judge-dependent).
+`eval/datasets/blind.{es,en}.jsonl`: 40 drafts per language (20 AutoSend, 20 NeedsHuman, all judge-dependent).
 Another thread wrote them from the field schema and the ticket facts only, without seeing the
 development set, the prompt, the rules or earlier results. Labels are still under human review.
 Judge = `LlmReplyJudge` with the clean prompt (695cae7). Rules = the frozen lexicon (sha256 bd6352…),

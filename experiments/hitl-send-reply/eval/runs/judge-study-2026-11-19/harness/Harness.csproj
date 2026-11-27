@@ -6,6 +6,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../../src/HitlSendReply/HitlSendReply.csproj" />
+    <ProjectReference Include="../../../../src/backend/HitlSendReply/HitlSendReply.csproj" />
   </ItemGroup>
 </Project>
