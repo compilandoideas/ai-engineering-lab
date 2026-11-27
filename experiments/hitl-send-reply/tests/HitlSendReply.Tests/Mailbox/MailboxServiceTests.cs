@@ -192,6 +192,32 @@ public sealed class MailboxServiceTests : IAsyncLifetime
     }
 
     [DockerFact]
+    public async Task Categories_filter_by_where_each_email_stands_and_count_every_category()
+    {
+        await using var db = NewDb();
+        var service = Service(db);
+        foreach (var status in new[] { EmailStatus.AwaitingReview, EmailStatus.AwaitingReview, EmailStatus.Sent, EmailStatus.Blocked })
+        {
+            _runs.Status = status;
+            await service.SubmitAsync(Compose(subject: $"{status}"), CancellationToken.None);
+        }
+
+        _notifier.Failure = new HttpRequestException("agent down");
+        await service.SubmitAsync(Compose(subject: "Never handed over"), CancellationToken.None);
+        _runs.Status = EmailStatus.AwaitingReview;
+
+        var review = await service.ListAsync(new EmailQuery(null, null, false, 0, 10, MailFolder.Review), CancellationToken.None);
+        var failed = await service.ListAsync(new EmailQuery(null, null, false, 0, 10, MailFolder.Failed), CancellationToken.None);
+        int Count(MailFolder folder) => review.Folders!.Single(f => f.Folder == folder).Count;
+
+        Assert.Equal(2, review.Total);
+        Assert.All(review.Items, e => Assert.Equal(EmailStatus.AwaitingReview, e.Status));
+        Assert.Equal("Never handed over", Assert.Single(failed.Items).Subject);
+        Assert.Equal((5, 2, 0, 1, 1, 1), (Count(MailFolder.All), Count(MailFolder.Review), Count(MailFolder.Agent),
+            Count(MailFolder.Sent), Count(MailFolder.NotSent), Count(MailFolder.Failed)));
+    }
+
+    [DockerFact]
     public async Task A_reply_waiting_for_a_person_is_kept_as_pending_once()
     {
         _runs.Pending.Add(new PendingReply("call-1", "li.wang@example.com", "We are sending a new package."));

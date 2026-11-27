@@ -30,9 +30,15 @@ customer message ──► Agent (LLM) ──► send_reply(ticketId, text)
 
 ## The review screen
 
-The review lives under the email in the inbox: one sentence on top says why the reply stopped and
-what is asked ("the judge found that the reply makes a commitment… it needs your approval"), then
-the agent's draft, where it goes (taken from the ticket) and three actions:
+The inbox is laid out like a mail client, in two panels: the list on the left, the open email on
+the right. "Categories" filters the list by where each email stands, with a count for each: all, to
+review, with the agent, sent, blocked or rejected, with errors. A dot marks what waits for a person,
+where a mail client marks "unread".
+
+The review lives in the reply composer under the email: one sentence on top says why the reply
+stopped and what is asked ("the judge found that the reply makes a commitment… it needs your
+approval"), then the composer with "To" locked to the ticket's address, "Re:" and the subject, the
+agent's draft as the body, and three actions at the bottom:
 
 - **Approve** sends exactly the text shown.
 - **Edit** sends the reviewer's own version. It goes through the deterministic rules again
@@ -40,7 +46,10 @@ the agent's draft, where it goes (taken from the ticket) and three actions:
   it, because a person wrote it and answers for it. A version that breaks a rule is not sent
   (422) and the review stays open. The framework replays the agent's own call on approval, so the
   edit is sent through the same tool and ledger check, and the agent's call is answered as replaced.
-- **Reject** needs a reason: the agent reads it to rewrite, and the rewrite goes to a person too.
+- **Reject** opens a field for the reason, which is required: the agent reads it to rewrite, and
+  the rewrite goes to a person too.
+
+Once decided, the reply shows as the next message of the thread, from Support.
 
 "Why it stopped and what happened" opens the policy trace stage by stage and the audit trail. Stage,
 outcome and status names are translated on the screen; the API keeps its English names because the

@@ -44,8 +44,20 @@ public sealed record Labels(
     string ToLabel,
     string RunLost,
     string ReplySent,
-    string EditRefused)
+    string EditRefused,
+    string Categories,
+    IReadOnlyDictionary<HitlSendReply.Web.Client.Mailbox.MailFolder, string> Folders,
+    string Refresh,
+    string Previous,
+    string Next,
+    string ReplyPrefix,
+    string AgentDraft,
+    string SupportName,
+    string RecipientLocked,
+    string RejectWithReason)
 {
+    public string Folder(HitlSendReply.Web.Client.Mailbox.MailFolder folder) => Folders[folder];
+
     public static readonly Labels En = new(
         Code: "en",
         PolicyTrace: "Policy trace",
@@ -89,7 +101,25 @@ public sealed record Labels(
         ToLabel: "To",
         RunLost: "Run lost (API restarted)",
         ReplySent: "Reply sent",
-        EditRefused: "Your version was not sent: it broke a rule. Fix it and try again.");
+        EditRefused: "Your version was not sent: it broke a rule. Fix it and try again.",
+        Categories: "Categories",
+        Folders: new Dictionary<HitlSendReply.Web.Client.Mailbox.MailFolder, string>
+        {
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.All] = "All",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Review] = "To review",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Agent] = "With the agent",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Sent] = "Sent",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.NotSent] = "Blocked or rejected",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Failed] = "With errors",
+        },
+        Refresh: "Refresh",
+        Previous: "Previous email",
+        Next: "Next email",
+        ReplyPrefix: "Re:",
+        AgentDraft: "Draft by the agent: nothing is sent until you decide.",
+        SupportName: "Support",
+        RecipientLocked: "from the ticket",
+        RejectWithReason: "Reject with this reason");
 
     public static readonly Labels Es = new(
         Code: "es",
@@ -134,5 +164,23 @@ public sealed record Labels(
         ToLabel: "Para",
         RunLost: "Corrida perdida (la API se reinició)",
         ReplySent: "Respuesta enviada",
-        EditRefused: "Tu versión no se envió porque no pasó una regla. Corrígela y vuelve a intentar.");
+        EditRefused: "Tu versión no se envió porque no pasó una regla. Corrígela y vuelve a intentar.",
+        Categories: "Categorías",
+        Folders: new Dictionary<HitlSendReply.Web.Client.Mailbox.MailFolder, string>
+        {
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.All] = "Todos",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Review] = "Por revisar",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Agent] = "Con el agente",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Sent] = "Enviados",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.NotSent] = "Bloqueados o rechazados",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.Failed] = "Con error",
+        },
+        Refresh: "Actualizar",
+        Previous: "Correo anterior",
+        Next: "Correo siguiente",
+        ReplyPrefix: "Re:",
+        AgentDraft: "Borrador del agente: no se envía nada hasta que decidas.",
+        SupportName: "Soporte",
+        RecipientLocked: "sale del ticket",
+        RejectWithReason: "Rechazar con esta razón");
 }

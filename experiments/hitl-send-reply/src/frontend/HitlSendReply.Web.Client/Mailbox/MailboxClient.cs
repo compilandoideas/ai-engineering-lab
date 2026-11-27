@@ -5,12 +5,20 @@ namespace HitlSendReply.Web.Client.Mailbox;
 /// <summary>The screen's calls to the Web server's mailbox (/mailbox/emails), not to the Agent API.</summary>
 public sealed class MailboxClient(HttpClient http)
 {
-    public async Task<EmailPageDto> ListAsync(string? search, string? sort, bool descending, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<EmailPageDto> ListAsync(string? search, string? sort, bool descending, int page, int pageSize,
+        MailFolder folder = MailFolder.All, CancellationToken cancellationToken = default)
     {
         var query = $"mailbox/emails?page={page}&pageSize={pageSize}&desc={descending.ToString().ToLowerInvariant()}"
             + (string.IsNullOrWhiteSpace(search) ? "" : $"&search={Uri.EscapeDataString(search)}")
-            + (string.IsNullOrWhiteSpace(sort) ? "" : $"&sort={Uri.EscapeDataString(sort)}");
+            + (string.IsNullOrWhiteSpace(sort) ? "" : $"&sort={Uri.EscapeDataString(sort)}")
+            + (folder == MailFolder.All ? "" : $"&folder={folder}");
         return await http.GetFromJsonAsync<EmailPageDto>(query, cancellationToken) ?? new EmailPageDto([], 0);
+    }
+
+    public async Task<EmailRowDto?> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using var response = await http.GetAsync($"mailbox/emails/{id}", cancellationToken);
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<EmailRowDto>(cancellationToken) : null;
     }
 
     public async Task<EmailRowDto?> SubmitAsync(ComposeEmailRequest request, CancellationToken cancellationToken = default)
