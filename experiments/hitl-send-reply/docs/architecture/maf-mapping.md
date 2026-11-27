@@ -5,37 +5,35 @@ All APIs below were compiled and exercised against `Microsoft.Agents.AI` 1.28.0 
 
 | Piece | API | File |
 |---|---|---|
-| Tool that always pauses | `new ApprovalRequiredAIFunction(AIFunctionFactory.Create(SendReply, name: "send_reply"))` | `SendReply/SupportTools.cs` |
-| Agent | `ChatClientAgent` + `ChatClientAgentOptions { ChatOptions { Instructions, Tools, AllowMultipleToolCalls = false } }` | `SendReply/SupportAgent.cs` |
-| Policy as the only auto-approval rule | `AsBuilder().UseToolApproval(new ToolApprovalAgentOptions { AutoApprovalRules = [gate.AutoApproveAsync], MaxAutoApprovalIterations = 2 })` | `SendReply/SupportAgent.cs`, `SendReply/ReplyGate.cs` |
-| Block / human decision | `ToolApprovalRequestContent.CreateResponse(approved, reason)`, resumed with `RunAsync(..., session)` | `SendReply/SupportRunner.cs` |
+| Tool that always pauses | `new ApprovalRequiredAIFunction(AIFunctionFactory.Create(SendReply, name: "send_reply"))` | `Infrastructure/Agent/SupportTools.cs` |
+| Agent | `ChatClientAgent` + `ChatClientAgentOptions { ChatOptions { Instructions, Tools, AllowMultipleToolCalls = false } }` | `Infrastructure/Agent/SupportAgent.cs` |
+| Policy as the only auto-approval rule | `AsBuilder().UseToolApproval(new ToolApprovalAgentOptions { AutoApprovalRules = [context => AutoApproveAsync(gate, context)], MaxAutoApprovalIterations = 2 })` | `Infrastructure/Agent/SupportAgent.cs`, `Application/Review/ReplyGate.cs` |
+| Block / human decision | `ToolApprovalRequestContent.CreateResponse(approved, reason)`, resumed with `RunAsync(..., session)` | `Infrastructure/Agent/SupportRunner.cs`, `Application/Review/HumanReview.cs` |
 
 ## Policy is framework-agnostic; MAF is an adapter
 
-The system is one project; its hosts (the Agent API, the Evals console) reference it, never the
-other way round. Inside the system, folders are organized by what each part does, not by
-technical layer:
+The backend is split into layers, one project each ([ADR 0014](../adr/0014-clean-architecture-layers-with-command-and-query-handlers.md)).
+Microsoft Agent Framework appears in exactly one of them:
 
 ```
-src/backend/HitlSendReply.Api, HitlSendReply.Evals   (hosts: HTTP, scenarios, in-memory stores, measurement)
-        │ references
-        ▼
-src/backend/HitlSendReply      SendReply/ (MAF) ──► Policy/ ──► Tickets/
-                               Judge/ (LLM)     ◄── Policy/ asks IReplyJudge
+HitlSendReply.Api (host) ──► Presentation (endpoints) ──► Application ──► Domain
+                       └───► Infrastructure ────────────────┘
+                             Agent/ (MAF), Judge/ (LLM), Llm/, InMemory/, Scripted/
 ```
 
-- `Tickets/` and `Policy/` decide everything that matters (block, human, auto-send) and reference
-  neither Microsoft Agent Framework, `Microsoft.Extensions.AI`, the OpenAI SDK nor the UI.
-- `SendReply/` adapts that policy to MAF: the auto-approval rule calls `ReplyGate`, the runner turns
-  decisions into `CreateResponse(...)`. Swap the framework and only this folder changes.
-- `Judge/` holds `IReplyJudge` and the two judges that talk to a model.
-- `LayeringTests` (NetArchTest) fails if `Tickets/` or `Policy/` take a dependency on a framework
-  or on `SendReply/`, or if the system references its hosts. A guard test checks the rule is not
-  vacuous, and it was verified by adding a temporary `Microsoft.Extensions.AI` type to `Policy/`
-  (the test failed).
+- Domain and Application decide everything that matters (block, human, auto-send, who authorized
+  which text) and reference neither Microsoft Agent Framework, `Microsoft.Extensions.AI`, the
+  OpenAI SDK nor ASP.NET Core. Application sees the agent only through `IReplyAgent` and `IReplyRun`.
+- `Infrastructure/Agent` adapts that to MAF: the auto-approval rule calls `ReplyGate`, the runner
+  asks `HumanReview` what to tell the agent and turns it into `CreateResponse(...)`. Swap the
+  framework and only this folder changes.
+- `Infrastructure/Judge` holds the two judges that talk to a model, behind `IReplyJudge`.
+- `LayeringTests` (NetArchTest and assembly references) fails if Domain or Application take a
+  dependency on a model framework or on an adapter, or if Presentation references Infrastructure.
+  A guard test checks the rule is not vacuous.
 
-This is also what makes the Python port mechanical: `Tickets/` + `Policy/` translate one to one;
-only the adapters change.
+This is also what makes the Python port mechanical: Domain and Application translate one to one
+(packages `domain`, `application`); only the adapters change.
 
 ```csharp
 AIFunction sendReply = new ApprovalRequiredAIFunction(
@@ -56,7 +54,7 @@ AIAgent guarded = agent.AsBuilder()
     .UseToolApproval(new ToolApprovalAgentOptions
     {
         // Ours: true only when the policy returns AutoSend. Errors end in "human".
-        AutoApprovalRules = [gate.AutoApproveAsync],
+        AutoApprovalRules = [context => AutoApproveAsync(gate, context)],
         MaxAutoApprovalIterations = 2,
     })
     .Build();

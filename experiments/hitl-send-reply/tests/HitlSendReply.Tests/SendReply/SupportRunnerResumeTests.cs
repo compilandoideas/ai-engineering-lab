@@ -1,8 +1,3 @@
-using HitlSendReply.Api.Runs;
-using HitlSendReply.Api.Scenarios;
-using HitlSendReply.Judge;
-using HitlSendReply.Policy;
-using HitlSendReply.SendReply;
 
 namespace HitlSendReply.Tests.SendReply;
 
@@ -30,7 +25,7 @@ public class SupportRunnerResumeTests
 
         var run = await pipeline.Runner.StartAsync("T-1002", "Damaged package.");
 
-        Assert.Equal(ApprovalRunStatus.AwaitingReview, run.Status);
+        Assert.Equal(ReplyRunStatus.AwaitingReview, run.Status);
         var review = Assert.Single(run.PendingReviews);
         Assert.Equal(Risky, review.Text);
         Assert.Equal("li.wang@example.com", review.Recipient);
@@ -46,7 +41,7 @@ public class SupportRunnerResumeTests
 
         await pipeline.Runner.ResumeAsync(run, run.PendingReviews[0].CallId, HumanVerdict.Approve("reviewer@test"));
 
-        Assert.Equal(ApprovalRunStatus.Completed, run.Status);
+        Assert.Equal(ReplyRunStatus.Completed, run.Status);
         Assert.Equal(Risky, Assert.Single(pipeline.Outbox.Sent).Text);
         Assert.Contains(pipeline.Audit.Entries, e => e.Event == "sent" && e.Actor == "reviewer@test");
     }
@@ -59,7 +54,7 @@ public class SupportRunnerResumeTests
 
         await pipeline.Runner.ResumeAsync(run, run.PendingReviews[0].CallId, HumanVerdict.Reject("reviewer@test", "No refund promises."));
 
-        Assert.Equal(ApprovalRunStatus.AwaitingReview, run.Status);
+        Assert.Equal(ReplyRunStatus.AwaitingReview, run.Status);
         var rewrite = Assert.Single(run.PendingReviews);
         Assert.Equal(Safe, rewrite.Text);
         Assert.Equal(PolicyStage.PriorRejection, rewrite.Decision.Stage);
@@ -74,7 +69,7 @@ public class SupportRunnerResumeTests
 
         await pipeline.Runner.ResumeAsync(run, run.PendingReviews[0].CallId, HumanVerdict.Edit("reviewer@test", Safe));
 
-        Assert.Equal(ApprovalRunStatus.Completed, run.Status);
+        Assert.Equal(ReplyRunStatus.Completed, run.Status);
         Assert.Equal(Safe, Assert.Single(pipeline.Outbox.Sent).Text);
         Assert.Contains(pipeline.Audit.Entries, e => e.Event == "human-edited" && e.Actor == "reviewer@test");
         Assert.Contains(pipeline.Audit.Entries, e => e.Event == "sent" && e.Actor == "reviewer@test");
@@ -91,7 +86,7 @@ public class SupportRunnerResumeTests
             pipeline.Runner.ResumeAsync(run, callId, HumanVerdict.Edit("reviewer@test", "Your order #A-9999 was delivered on November 7.")));
 
         Assert.Equal(PolicyStage.Facts, refused.Decision.Stage);
-        Assert.Equal(ApprovalRunStatus.AwaitingReview, run.Status);
+        Assert.Equal(ReplyRunStatus.AwaitingReview, run.Status);
         Assert.Equal(callId, Assert.Single(run.PendingReviews).CallId);
         Assert.Empty(pipeline.Outbox.Sent);
     }
@@ -103,7 +98,7 @@ public class SupportRunnerResumeTests
 
         var run = await pipeline.Runner.StartAsync("T-1001", "Where is my order?");
 
-        Assert.Equal(ApprovalRunStatus.Completed, run.Status);
+        Assert.Equal(ReplyRunStatus.Completed, run.Status);
         Assert.Empty(run.PendingReviews);
         Assert.Equal(Verified, Assert.Single(pipeline.Outbox.Sent).Text);
     }

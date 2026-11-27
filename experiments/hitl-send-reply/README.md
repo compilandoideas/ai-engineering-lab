@@ -24,7 +24,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Core minimal API, a Blazor Web App (WebAssembly, MudBlazor) behind a YARP forwarder, Postgres
 through Aspire, and xUnit. Fictional data in **English and Spanish**.
 
-> Status: experiment, not production code. 168/168 tests ([last run](tests/last-run.txt)).
+> Status: experiment, not production code. 167/167 tests ([last run](tests/last-run.txt)).
 > Real-model runs and judge studies are in [`eval/runs/`](eval/runs/).
 
 ## Documentation
@@ -34,25 +34,25 @@ through Aspire, and xUnit. Fictional data in **English and Spanish**.
 | [architecture/overview.md](docs/architecture/overview.md) | the processes, how an email becomes a run, the folder layout |
 | [architecture/hitl-flow.md](docs/architecture/hitl-flow.md) | the policy in order, the review (approve, edit, reject), the seven designed cases |
 | [architecture/maf-mapping.md](docs/architecture/maf-mapping.md) | how it maps to Microsoft Agent Framework and why the policy does not depend on it |
-| [adr/](docs/adr/README.md) | the 13 design decisions, one per file |
+| [adr/](docs/adr/README.md) | the 14 design decisions, one per file |
 | [evaluation/judge.md](docs/evaluation/judge.md) | how the judge was measured, the blind set, the detection layers |
 | [guides/run.md](docs/guides/run.md) | run it on macOS, Linux or Windows, with or without a model key |
 | [limits.md](docs/limits.md) | what it does not do, and the next step |
 
 ## Where to start reading the code
 
-1. `src/backend/HitlSendReply/Policy/PublishPolicy.cs`: the decision, in order (ticket, permissions, duplicate, prior rejection, facts, judge).
-2. `src/backend/HitlSendReply/SendReply/SupportAgent.cs` and `ReplyGate.cs`: the agent, its tools, and the policy as the only auto-approval rule.
-3. `src/backend/HitlSendReply/SendReply/SupportRunner.cs`: pauses for the person and resumes with the verdict (approve, edit, reject).
-4. `src/backend/HitlSendReply/Judge/LlmReplyJudge.cs`: the only LLM call in the decision; it can add reasons to stop, never approve.
-5. `src/backend/HitlSendReply.Api/Runs/RunEndpoints.cs` and `Inbound/InboundEmailHandler.cs`: the HTTP contract and how an email becomes a run.
+1. `src/backend/HitlSendReply.Application/Policy/PublishPolicy.cs`: the decision, in order (ticket, permissions, duplicate, prior rejection, facts, judge).
+2. `src/backend/HitlSendReply.Application/Review/`: `ReplyGate` (the policy as the only auto-approval rule), `HumanReview` (approve, edit, reject) and `ReplySender` (the one send path).
+3. `src/backend/HitlSendReply.Infrastructure/Agent/SupportAgent.cs` and `SupportRunner.cs`: the agent on Microsoft Agent Framework; it pauses for the person and resumes with the verdict.
+4. `src/backend/HitlSendReply.Infrastructure/Judge/LlmReplyJudge.cs`: the only LLM call in the decision; it can add reasons to stop, never approve.
+5. `src/backend/HitlSendReply.Application/Runs/` and `HitlSendReply.Presentation/Endpoints/`: the use cases (commands and queries with `Result`) and the minimal API that sends them.
 6. `src/frontend/HitlSendReply.Web/Mailbox/MailboxService.cs`: the inbox in Postgres and the replies kept in `email_replies`.
 7. `src/frontend/HitlSendReply.Web.Client/Pages/Inbox.razor` and `Components/MailReply.razor`: the screen, built only on the HTTP contract.
 
 ## Folders
 
 ```
-src/         backend (the system, contracts, Agent API, Evals) and frontend (Web server + client)
+src/         backend (Domain, Application, Infrastructure, Presentation, Api host, Contracts, Evals) and frontend (Web server + client)
 tests/       xUnit tests, e2e/ (browser smoke), last-run.txt
 eval/        datasets/ (labeled drafts) and runs/ (real-model runs and judge studies)
 docs/        architecture, ADRs, evaluation, guides, limits, images

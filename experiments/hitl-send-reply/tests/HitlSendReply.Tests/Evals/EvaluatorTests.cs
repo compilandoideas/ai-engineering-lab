@@ -1,8 +1,4 @@
-using HitlSendReply.Api.Scenarios;
 using HitlSendReply.Evals;
-using HitlSendReply.Judge;
-using HitlSendReply.Policy;
-using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Tests.Evals;
 

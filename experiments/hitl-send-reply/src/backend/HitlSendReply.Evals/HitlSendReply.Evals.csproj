@@ -4,9 +4,8 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\HitlSendReply\HitlSendReply.csproj" />
-    <!-- For the in-memory adapters, sample tickets and model settings the API already owns. -->
-    <ProjectReference Include="..\HitlSendReply.Api\HitlSendReply.Api.csproj" />
+    <!-- For the policy, the in-memory adapters, the sample tickets and the model settings. -->
+    <ProjectReference Include="..\HitlSendReply.Infrastructure\HitlSendReply.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <!-- The labeled drafts live in eval/datasets: drafts.<lang> (development) and blind.<lang> (never used to tune). -->
@@ -14,5 +13,22 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="HitlSendReply.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="HitlSendReply.Domain" />
+    <Using Include="HitlSendReply.Domain.Tickets" />
+    <Using Include="HitlSendReply.Domain.Policy" />
+    <Using Include="HitlSendReply.Domain.Judge" />
+    <Using Include="HitlSendReply.Domain.Review" />
+    <Using Include="HitlSendReply.Application.Abstractions" />
+    <Using Include="HitlSendReply.Application.Policy" />
+    <Using Include="HitlSendReply.Application.Review" />
+    <Using Include="HitlSendReply.Application.Runs" />
+    <Using Include="HitlSendReply.Infrastructure.Agent" />
+    <Using Include="HitlSendReply.Infrastructure.Judge" />
+    <Using Include="HitlSendReply.Infrastructure.Llm" />
+    <Using Include="HitlSendReply.Infrastructure.InMemory" />
+    <Using Include="HitlSendReply.Infrastructure.Scripted" />
+    <Using Include="HitlSendReply.Infrastructure" />
   </ItemGroup>
 </Project>

@@ -18,3 +18,4 @@ and were taken while building the experiment; they were moved here from the READ
 | [0011](0011-bff-ready-with-no-auth-in-this-experiment.md) | BFF-ready, with no auth in this experiment |
 | [0012](0012-ag-ui-was-considered-and-not-used.md) | AG-UI was considered and not used |
 | [0013](0013-ui-components-stay-inside-the-experiment.md) | UI components stay inside the experiment |
+| [0014](0014-clean-architecture-layers-with-command-and-query-handlers.md) | Clean Architecture layers, with command and query handlers |

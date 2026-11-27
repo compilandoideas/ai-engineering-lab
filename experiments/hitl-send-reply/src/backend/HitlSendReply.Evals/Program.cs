@@ -1,5 +1,4 @@
 using HitlSendReply.Evals;
-using HitlSendReply.Tickets;
 
 if (args.FirstOrDefault()?.ToLowerInvariant() != "evaluate")
 {

@@ -1,7 +1,4 @@
 using Microsoft.Extensions.AI;
-using HitlSendReply.Api.InMemory;
-using HitlSendReply.Judge;
-using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Tests.Judge;
 

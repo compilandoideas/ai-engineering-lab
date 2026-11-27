@@ -3,13 +3,11 @@ using System.Text.Json.Serialization;
 namespace HitlSendReply.Contracts;
 
 [JsonConverter(typeof(JsonStringEnumConverter<RunMode>))]
+/// <summary>Live: a real model drafts. Scenario: no model is configured and a designed case plays the agent.</summary>
 public enum RunMode { Scenario, Live }
 
 [JsonConverter(typeof(JsonStringEnumConverter<RunStatus>))]
 public enum RunStatus { AwaitingReview, Completed, Starting, Failed }
-
-/// <summary>Start a run: a designed scenario (scripted model and judge, no key) or the real model on a ticket.</summary>
-public sealed record StartRunRequest(RunMode Mode, int? Scenario = null, string? TicketId = null, string? CustomerMessage = null, string Lang = "en");
 
 /// <summary>
 /// A person's verdict on one pending review. A rejection needs a reason: the agent reads it to

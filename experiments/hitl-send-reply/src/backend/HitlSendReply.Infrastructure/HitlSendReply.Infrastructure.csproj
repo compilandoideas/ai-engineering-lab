@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Infrastructure: the adapters. Microsoft Agent Framework (the agent and its approval loop),
+       the LLM judges, the OpenAI-compatible client, the in-memory stores and the scripted demo. -->
+  <ItemGroup>
+    <ProjectReference Include="..\HitlSendReply.Application\HitlSendReply.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Agents.AI" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="HitlSendReply.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="HitlSendReply.Domain" />
+    <Using Include="HitlSendReply.Domain.Tickets" />
+    <Using Include="HitlSendReply.Domain.Policy" />
+    <Using Include="HitlSendReply.Domain.Judge" />
+    <Using Include="HitlSendReply.Domain.Review" />
+    <Using Include="HitlSendReply.Application.Abstractions" />
+    <Using Include="HitlSendReply.Application.Policy" />
+    <Using Include="HitlSendReply.Application.Review" />
+    <Using Include="HitlSendReply.Application.Runs" />
+    <Using Include="HitlSendReply.Infrastructure.Agent" />
+    <Using Include="HitlSendReply.Infrastructure.Judge" />
+    <Using Include="HitlSendReply.Infrastructure.Llm" />
+    <Using Include="HitlSendReply.Infrastructure.InMemory" />
+    <Using Include="HitlSendReply.Infrastructure.Scripted" />
+    <Using Include="HitlSendReply.Infrastructure" />
+  </ItemGroup>
+</Project>

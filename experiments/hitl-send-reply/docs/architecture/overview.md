@@ -52,7 +52,7 @@ New email (MudDialog) ─► Web server: save InboundEmail in Postgres (status R
                               │
                               ▼  IInboundEmailNotifier
                          now:   POST /api/inbound-emails  { emailId, from, subject, body, receivedAt }
-                         later: publish to a queue; its consumer calls the same InboundEmailHandler
+                         later: publish to a queue; its consumer sends the same ReceiveInboundEmailCommand
                               │
                               ▼  Agent API
                          match the ticket (sender address, else "T-1002" in the subject)
@@ -97,24 +97,24 @@ the API process; a queue is the next step when runs must survive a restart, and 
 
 ```
 contracts/openapi-v1.json         the HTTP contract, regenerated on build (language-neutral)
-src/backend/HitlSendReply/        the system: what would ship
-  Tickets/      ticket, order, idempotency key, permissions, ITicketStore (no framework types)
-  SendReply/    the use case on MAF: agent, send_reply tool, gate, resumable runner, approval ledger
-  Policy/       PublishPolicy, FactChecker, decisions, and the ports it needs (IOutbox, IReviewHistory)
-  Judge/        IReplyJudge, LlmReplyJudge, RubricReplyJudge
-src/backend/HitlSendReply.Contracts/  request and response records; references nothing
-src/backend/HitlSendReply.Api/    the Agent API: never referenced by the system
-  Runs/         endpoints, run store, mapper, Pipeline (wires one instance of the system)
-  Scenarios/    the seven designed cases, scripted model and judge, catalog endpoints
-  InMemory/     outbox, audit log, review history, sample tickets
-  Live/         real model settings
-src/backend/HitlSendReply.Evals/  judge measurement over eval/datasets/
-src/backend/HitlSendReply.Api/Inbound/    the inbound-email webhook: ticket matching, idempotent run start
+src/backend/HitlSendReply.Domain/          no packages: Result/Error, Tickets/ (ticket, order, idempotency key,
+                                           permissions), Policy/ (decisions, FactChecker), Judge/ (signal), Review/ (verdict)
+src/backend/HitlSendReply.Application/     no framework or model: Abstractions/ (ports: stores, outbox, audit, judge,
+                                           agent, sessions), Policy/ (PublishPolicy), Review/ (gate, human review,
+                                           the one send path, ledger), Runs/ and Tickets/ (commands, queries, handlers,
+                                           validators, errors), Messaging/ and Behaviors/ (handler interfaces, decorators)
+src/backend/HitlSendReply.Infrastructure/  the adapters: Agent/ (MAF agent, tools, resumable runner), Judge/ (LLM judges),
+                                           Llm/ (model settings), InMemory/ (stores, sample tickets), Scripted/ (no-key demo),
+                                           Pipeline (wires one run), RunSessionFactory
+src/backend/HitlSendReply.Presentation/    minimal API: Endpoints/ (one IEndpoint per area), Results/ (Result → ProblemDetails)
+src/backend/HitlSendReply.Api/             the host: Program.cs composes the layers and generates the OpenAPI document
+src/backend/HitlSendReply.Contracts/       request and response records; references nothing
+src/backend/HitlSendReply.Evals/           judge measurement over eval/datasets/
 src/frontend/HitlSendReply.Web/        serves the client, forwards /api with YARP (future BFF)
   Mailbox/      simulated inbox: InboundEmail, EmailReply, MailboxDbContext + migrations, webhook notifier,
                 PendingReplyTracker, endpoints
 src/frontend/HitlSendReply.Web.Client/ the screens: Pages/Inbox (the mail-style inbox), Components/, Api/, Mailbox/, Localization/
-tests/HitlSendReply.Tests/        168 tests, one folder per area (scenario and dataset tests run in EN and ES;
+tests/HitlSendReply.Tests/        167 tests, one folder per area; Support/ holds the seven designed scenarios (they run in EN and ES;
                                   Mailbox/ runs against Postgres in Testcontainers; skipped, with the reason, without Docker)
 HitlSendReply.AppHost/            Aspire: postgres (database "mailbox"), api, web
 HitlSendReply.ServiceDefaults/    telemetry, /health and /alive, service discovery, resilience

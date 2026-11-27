@@ -11,7 +11,10 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\backend\HitlSendReply\HitlSendReply.csproj" />
+    <ProjectReference Include="..\..\src\backend\HitlSendReply.Domain\HitlSendReply.Domain.csproj" />
+    <ProjectReference Include="..\..\src\backend\HitlSendReply.Application\HitlSendReply.Application.csproj" />
+    <ProjectReference Include="..\..\src\backend\HitlSendReply.Infrastructure\HitlSendReply.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\backend\HitlSendReply.Presentation\HitlSendReply.Presentation.csproj" />
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Api\HitlSendReply.Api.csproj" />
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Contracts\HitlSendReply.Contracts.csproj" />
     <ProjectReference Include="..\..\src\backend\HitlSendReply.Evals\HitlSendReply.Evals.csproj" />
@@ -20,5 +23,23 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="HitlSendReply.Domain" />
+    <Using Include="HitlSendReply.Domain.Tickets" />
+    <Using Include="HitlSendReply.Domain.Policy" />
+    <Using Include="HitlSendReply.Domain.Judge" />
+    <Using Include="HitlSendReply.Domain.Review" />
+    <Using Include="HitlSendReply.Application.Abstractions" />
+    <Using Include="HitlSendReply.Application.Policy" />
+    <Using Include="HitlSendReply.Application.Review" />
+    <Using Include="HitlSendReply.Application.Runs" />
+    <Using Include="HitlSendReply.Infrastructure.Agent" />
+    <Using Include="HitlSendReply.Infrastructure.Judge" />
+    <Using Include="HitlSendReply.Infrastructure.Llm" />
+    <Using Include="HitlSendReply.Infrastructure.InMemory" />
+    <Using Include="HitlSendReply.Infrastructure.Scripted" />
+    <Using Include="HitlSendReply.Infrastructure" />
+    <Using Include="HitlSendReply.Tests.Support" />
   </ItemGroup>
 </Project>
