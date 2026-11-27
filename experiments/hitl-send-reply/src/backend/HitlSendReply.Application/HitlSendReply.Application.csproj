@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Application: the policy in order, the review rules, the one send path, and the use cases
+       (command and query handlers). It declares the ports (stores, outbox, audit, judge, agent) and knows no framework or model. -->
+  <ItemGroup>
+    <ProjectReference Include="..\HitlSendReply.Domain\HitlSendReply.Domain.csproj" />
+    <ProjectReference Include="..\HitlSendReply.Contracts\HitlSendReply.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Scrutor" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="HitlSendReply.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="HitlSendReply.Domain" />
+    <Using Include="HitlSendReply.Domain.Tickets" />
+    <Using Include="HitlSendReply.Domain.Policy" />
+    <Using Include="HitlSendReply.Domain.Judge" />
+    <Using Include="HitlSendReply.Domain.Review" />
+    <Using Include="HitlSendReply.Application.Abstractions" />
+    <Using Include="HitlSendReply.Application.Policy" />
+    <Using Include="HitlSendReply.Application.Review" />
+    <Using Include="HitlSendReply.Application.Runs" />
+    <Using Include="HitlSendReply.Application.Messaging" />
+  </ItemGroup>
+</Project>

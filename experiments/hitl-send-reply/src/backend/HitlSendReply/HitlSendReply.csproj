@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- The system: what would ship. Knows nothing about the console, scenarios or fakes. -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Agents.AI" />
-  </ItemGroup>
-  <ItemGroup>
-    <InternalsVisibleTo Include="HitlSendReply.Tests" />
-  </ItemGroup>
-</Project>

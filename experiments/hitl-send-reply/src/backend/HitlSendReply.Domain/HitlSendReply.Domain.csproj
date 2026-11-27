@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Domain: tickets, the policy's verdicts, fact checking, the judge's signal, the human verdict.
+       No packages and no project references: plain C#, the part a Python port copies first. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="HitlSendReply.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="HitlSendReply.Domain" />
+    <Using Include="HitlSendReply.Domain.Tickets" />
+    <Using Include="HitlSendReply.Domain.Policy" />
+    <Using Include="HitlSendReply.Domain.Judge" />
+    <Using Include="HitlSendReply.Domain.Review" />
+  </ItemGroup>
+</Project>

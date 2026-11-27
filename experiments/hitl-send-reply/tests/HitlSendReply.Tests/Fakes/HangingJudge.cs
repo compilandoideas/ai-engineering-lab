@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using HitlSendReply.Judge;
-using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Tests.Fakes;
 

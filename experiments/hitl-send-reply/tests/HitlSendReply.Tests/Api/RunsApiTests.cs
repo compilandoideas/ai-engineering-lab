@@ -2,37 +2,52 @@ using System.Net.Http.Json;
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using HitlSendReply.Api.Live;
-using HitlSendReply.Api.Runs;
-using HitlSendReply.Api.Scenarios;
 using HitlSendReply.Contracts;
-using HitlSendReply.Tickets;
 
 namespace HitlSendReply.Tests.Api;
 
 /// <summary>
-/// The seven scenarios end to end over HTTP: the person answers in a separate request, and the
+/// The seven scenarios end to end over HTTP, each started by an inbound email: the person answers in a separate request, and the
 /// guarantees are the same as in process. No model key is ever configured here.
 /// </summary>
 public class RunsApiTests(RunsApiTests.ApiFactory factory) : IClassFixture<RunsApiTests.ApiFactory>
 {
-    // Any type of the API assembly selects its entry point; Program is ambiguous because Evals also has one.
-    public sealed class ApiFactory : WebApplicationFactory<RunStore>
+    public sealed class ApiFactory : WebApplicationFactory<HitlSendReply.Api.ApiMarker>
     {
+        /// <summary>Who plays the agent in the next run; without one, the scripted demo for the ticket.</summary>
+        public ScenarioSessionFactory Scenarios { get; } = new();
+
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder) =>
             builder.ConfigureServices(services =>
             {
-                services.AddSingleton(new LiveModels(null)); // last registration wins: never a real model in tests
+                // Last registration wins: never a real model in tests.
+                services.AddSingleton(new LiveModels(null));
+                services.AddSingleton<IRunSessionFactory>(sp => Scenarios.Next is null
+                    ? new RunSessionFactory(new LiveModels(null))
+                    : Scenarios);
             });
     }
 
     private readonly HttpClient _http = factory.CreateClient();
 
-    private async Task<RunDto> StartAsync(int scenario, string lang)
+    // A run starts the way it does in production: an email arrives on the webhook.
+    private async Task<RunDto> StartAsync(int number, string lang)
     {
-        var response = await _http.PostAsJsonAsync("/api/runs", new StartRunRequest(RunMode.Scenario, scenario, Lang: lang));
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<RunDto>())!;
+        var scenario = ScenarioCatalog.For(lang == "es" ? Language.Es : Language.En).Single(s => s.Number == number);
+        factory.Scenarios.Next = scenario;
+        var response = await _http.PostAsJsonAsync("/api/inbound-emails", new InboundEmailRequest(
+            Guid.NewGuid().ToString("n"), scenario.Ticket.CustomerAddress, "Support", scenario.CustomerMessage, DateTimeOffset.UtcNow));
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var runId = (await response.Content.ReadFromJsonAsync<InboundEmailResult>())!.RunId;
+
+        RunDto? run = null;
+        for (var i = 0; i < 100 && run?.Status is null or RunStatus.Starting; i++)
+        {
+            run = await _http.GetFromJsonAsync<RunDto>($"/api/runs/{runId}");
+            await Task.Delay(10);
+        }
+
+        return run!;
     }
 
     private async Task<HttpResponseMessage> ReviewAsync(RunDto run, string callId, bool approved, string? reason = null) =>
@@ -154,20 +169,10 @@ public class RunsApiTests(RunsApiTests.ApiFactory factory) : IClassFixture<RunsA
     }
 
     [Fact]
-    public async Task Live_mode_without_a_model_key_is_a_conflict()
+    public async Task The_catalog_lists_five_tickets_per_language()
     {
-        var response = await _http.PostAsJsonAsync("/api/runs", new StartRunRequest(RunMode.Live, TicketId: "T-1002", CustomerMessage: "Damaged package."));
-
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task The_catalog_lists_seven_scenarios_and_five_tickets_per_language()
-    {
-        var scenarios = await _http.GetFromJsonAsync<List<ScenarioDto>>("/api/scenarios?lang=es");
         var tickets = await _http.GetFromJsonAsync<List<TicketDto>>("/api/tickets?lang=es");
 
-        Assert.Equal(7, scenarios!.Count);
         Assert.Equal(5, tickets!.Count);
         Assert.All(tickets, t => Assert.Equal("es", t.Language));
     }

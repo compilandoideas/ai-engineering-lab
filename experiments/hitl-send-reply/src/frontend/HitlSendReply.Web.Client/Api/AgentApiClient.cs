@@ -9,17 +9,11 @@ namespace HitlSendReply.Web.Client.Api;
 /// </summary>
 public sealed class AgentApiClient(HttpClient http)
 {
-    public async Task<IReadOnlyList<ScenarioDto>> ListScenariosAsync(string lang, CancellationToken cancellationToken = default) =>
-        await http.GetFromJsonAsync<List<ScenarioDto>>($"api/scenarios?lang={lang}", cancellationToken) ?? [];
-
     public async Task<IReadOnlyList<TicketDto>> ListTicketsAsync(string lang, CancellationToken cancellationToken = default) =>
         await http.GetFromJsonAsync<List<TicketDto>>($"api/tickets?lang={lang}", cancellationToken) ?? [];
 
     public async Task<ApiResult<RunDto>> GetRunAsync(string runId, CancellationToken cancellationToken = default) =>
         await ReadAsync<RunDto>(await http.GetAsync($"api/runs/{runId}", cancellationToken), cancellationToken);
-
-    public async Task<ApiResult<RunDto>> StartRunAsync(StartRunRequest request, CancellationToken cancellationToken = default) =>
-        await ReadAsync<RunDto>(await http.PostAsJsonAsync("api/runs", request, cancellationToken), cancellationToken);
 
     public async Task<ApiResult<RunDto>> ReviewAsync(string runId, string callId, ReviewRequest review, CancellationToken cancellationToken = default) =>
         await ReadAsync<RunDto>(await http.PostAsJsonAsync($"api/runs/{runId}/reviews/{callId}", review, cancellationToken), cancellationToken);

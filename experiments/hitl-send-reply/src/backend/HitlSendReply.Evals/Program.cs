@@ -1,5 +1,4 @@
 using HitlSendReply.Evals;
-using HitlSendReply.Tickets;
 
 if (args.FirstOrDefault()?.ToLowerInvariant() != "evaluate")
 {
@@ -8,8 +7,8 @@ if (args.FirstOrDefault()?.ToLowerInvariant() != "evaluate")
 
           dotnet run --project src/backend/HitlSendReply.Evals -- evaluate [--lang en|es] [--runs 3] [--set dev|blind]
               Runs the full policy with the real judge over labeled drafts and writes results/.
-              Needs OPENAI_API_KEY (or LAB_LLM_* variables). dev = data/drafts.<lang>.jsonl,
-              blind = heldout/blind.<lang>.jsonl (never used to tune).
+              Needs OPENAI_API_KEY (or LAB_LLM_* variables). dev = eval/datasets/drafts.<lang>.jsonl,
+              blind = eval/datasets/blind.<lang>.jsonl (never used to tune).
         """);
     return 0;
 }

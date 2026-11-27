@@ -1,24 +1,24 @@
-using HitlSendReply.Api.Inbound;
-using HitlSendReply.Api.Live;
-using HitlSendReply.Api.Runs;
-using HitlSendReply.Api.Scenarios;
+using HitlSendReply.Application;
+using HitlSendReply.Infrastructure;
+using HitlSendReply.Presentation.Exceptions;
 
+// Composition only: the use cases (Application), their adapters (Infrastructure) and the endpoints (Presentation).
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
-builder.Services.AddSingleton<RunStore>();
-builder.Services.AddSingleton<InboundEmailHandler>();
-builder.Services.AddSingleton(_ => new LiveModels(LlmSettings.FromEnvironment()));
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddApplication([typeof(ApplicationConfiguration).Assembly]);
+builder.Services.AddInfrastructure();
+builder.Services.AddEndpoints(typeof(RunEndpoints).Assembly);
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 app.MapOpenApi();
-app.MapCatalogEndpoints();
-app.MapRunEndpoints();
-app.MapInboundEmailEndpoints();
+app.MapEndpoints();
 
 app.Run();
