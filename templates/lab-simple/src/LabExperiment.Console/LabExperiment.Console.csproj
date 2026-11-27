@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Console: composition and output only. A real provider is wired here, never in Core. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LabExperiment.Core\LabExperiment.Core.csproj" />
+  </ItemGroup>
+</Project>

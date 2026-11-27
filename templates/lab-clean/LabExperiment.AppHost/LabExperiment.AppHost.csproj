@@ -1,0 +1,12 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
+  <!-- Starts the API with the Aspire dashboard. Add databases or other services here. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>labexperiment-apphost</UserSecretsId>
+    <!-- Dashboard and DCP come from NuGet packages, so the Aspire CLI is not required. -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);ASPIRE010</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\LabExperiment.Api\LabExperiment.Api.csproj" />
+  </ItemGroup>
+</Project>

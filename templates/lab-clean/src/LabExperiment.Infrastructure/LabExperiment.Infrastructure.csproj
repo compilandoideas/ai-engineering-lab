@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Infrastructure: the adapters. Microsoft Agent Framework, model clients, stores.
+       It implements the ports declared in Application. -->
+  <ItemGroup>
+    <ProjectReference Include="..\LabExperiment.Application\LabExperiment.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Agents.AI" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LabExperiment.Tests" />
+  </ItemGroup>
+</Project>

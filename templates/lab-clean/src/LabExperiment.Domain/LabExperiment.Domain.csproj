@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Domain: the experiment's concepts and rules, Result/Error. No packages and no project
+       references: plain C#, the part a Python port copies first. -->
+</Project>

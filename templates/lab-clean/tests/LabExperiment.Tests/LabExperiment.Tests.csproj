@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\LabExperiment.Domain\LabExperiment.Domain.csproj" />
+    <ProjectReference Include="..\..\src\LabExperiment.Application\LabExperiment.Application.csproj" />
+    <ProjectReference Include="..\..\src\LabExperiment.Infrastructure\LabExperiment.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\LabExperiment.Presentation\LabExperiment.Presentation.csproj" />
+    <ProjectReference Include="..\..\src\LabExperiment.Api\LabExperiment.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

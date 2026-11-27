@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Application: the use cases (command and query handlers) and the ports they need.
+       It knows Domain and no framework, web host or model SDK. -->
+  <ItemGroup>
+    <ProjectReference Include="..\LabExperiment.Domain\LabExperiment.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Scrutor" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LabExperiment.Tests" />
+  </ItemGroup>
+</Project>

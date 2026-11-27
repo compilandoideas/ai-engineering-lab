@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "AI Engineering Lab",
+  "classifications": ["Lab", "Web API", "Clean Architecture", "Experiment"],
+  "identity": "AiEngineeringLab.Templates.Clean",
+  "name": "AI Engineering Lab: layered experiment",
+  "description": "Domain, Application, Infrastructure, Presentation and Api, with command/query handlers, decorators, ProblemDetails and layering tests. For experiments that expose an API or have more than one flow.",
+  "shortName": "lab-clean",
+  "sourceName": "LabExperiment",
+  "preferNameDirectory": true,
+  "tags": { "language": "C#", "type": "solution" },
+  "symbols": {
+    "aspire": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "false",
+      "description": "Adds an Aspire AppHost and ServiceDefaults (telemetry, health checks)."
+    }
+  },
+  "SpecialCustomOperations": {
+    "**/*.slnx": {
+      "operations": [
+        {
+          "type": "conditional",
+          "configuration": {
+            "if": ["<!--#if"], "else": ["<!--#else"], "elseif": ["<!--#elseif"], "endif": ["<!--#endif"],
+            "trim": true, "wholeLine": true, "evaluator": "C++"
+          }
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "exclude": ["**/bin/**", "**/obj/**", ".template.config/**"],
+      "modifiers": [
+        { "condition": "(!aspire)", "exclude": ["LabExperiment.AppHost/**", "LabExperiment.ServiceDefaults/**"] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+<Solution>
+<!--#if (aspire) -->
+  <Project Path="LabExperiment.AppHost/LabExperiment.AppHost.csproj" />
+  <Project Path="LabExperiment.ServiceDefaults/LabExperiment.ServiceDefaults.csproj" />
+<!--#endif -->
+  <Folder Name="/src/">
+    <Project Path="src/LabExperiment.Domain/LabExperiment.Domain.csproj" />
+    <Project Path="src/LabExperiment.Application/LabExperiment.Application.csproj" />
+    <Project Path="src/LabExperiment.Infrastructure/LabExperiment.Infrastructure.csproj" />
+    <Project Path="src/LabExperiment.Presentation/LabExperiment.Presentation.csproj" />
+    <Project Path="src/LabExperiment.Api/LabExperiment.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LabExperiment.Tests/LabExperiment.Tests.csproj" />
+  </Folder>
+</Solution>
