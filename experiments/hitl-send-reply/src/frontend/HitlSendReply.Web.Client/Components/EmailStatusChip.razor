@@ -1,5 +1,8 @@
-<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(Lost ? Color.Default : ColorOf(Status))"
-         data-testid="email-status" data-status="@Status">@(Lost ? Text.RunLost : Text.Name(Status))</MudChip>
+@* The email's status as a quiet badge in the reader's toolbar: a colored dot and gray text. *@
+
+<span class="mail-badge" data-testid="email-status" data-status="@Status">
+    <span class="@($"mail-badge-dot {ToneOf(Status)}")"></span>@(Lost ? Text.RunLost : Text.Name(Status))
+</span>
 
 @code {
     [CascadingParameter] public Labels Text { get; set; } = Labels.En;
@@ -9,12 +12,12 @@
     /// <summary>The run is gone (the Agent API restarted): the status is the last one known.</summary>
     [Parameter] public bool Lost { get; set; }
 
-    private static Color ColorOf(EmailStatus status) => status switch
+    private string ToneOf(EmailStatus status) => Lost ? "muted" : status switch
     {
-        EmailStatus.Sent => Color.Success,
-        EmailStatus.AwaitingReview => Color.Warning,
-        EmailStatus.NotifyFailed or EmailStatus.Blocked or EmailStatus.RunFailed => Color.Error,
-        EmailStatus.Unmatched => Color.Default,
-        _ => Color.Info,
+        EmailStatus.Sent => "ok",
+        EmailStatus.AwaitingReview => "wait",
+        EmailStatus.NotifyFailed or EmailStatus.RunFailed => "bad",
+        EmailStatus.Blocked or EmailStatus.Unmatched => "muted",
+        _ => "busy",
     };
 }

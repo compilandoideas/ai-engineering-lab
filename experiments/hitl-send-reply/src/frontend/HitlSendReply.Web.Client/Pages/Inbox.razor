@@ -9,132 +9,184 @@
 
 <PageTitle>@Text.InboxTitle</PageTitle>
 
-@* Laid out like a mail client, in two panels: the list on the left and, on the right, the open
-   email with the agent's draft in the reply composer under it. On a phone the two take turns. *@
-<div class="mail-shell">
-    <MudPaper Outlined="true" Class="@($"mail-panel mail-list {(Selected is null ? "" : "mail-hide-phone")}")" data-testid="inbox">
-        <div class="mail-toolbar">
-            <MudText Typo="Typo.h6" Class="flex-grow-1">@Text.InboxTitle</MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small"
-                       Disabled="_sending" OnClick="ComposeAsync" data-testid="compose">@Text.Compose</MudButton>
+@* Laid out like a mail client: the sidebar with the categories, the list, and the open email with
+   the agent's draft in the reply composer under it. On a phone the list and the email take turns. *@
+<div class="@($"mail-shell {(_sidebar ? "" : "no-sidebar")}")">
+    @* The sidebar: who answers, the main action and the categories with their counts. On a phone it
+       folds into a bar on top. *@
+    <aside class="mail-sidebar" data-testid="sidebar">
+        <div class="side-user">
+            <span class="mail-avatar support"><MudIcon Icon="@Icons.Material.Outlined.SupportAgent" Style="font-size: 17px" /></span>
+            <div class="side-user-text">
+                <div class="side-user-name">@Text.SupportName</div>
+                <div class="side-user-mail">@Client.Mailbox.Mailbox.SupportAddress</div>
+            </div>
         </div>
-        <div class="mail-toolbar pt-0">
-            <MudTextField T="string" Value="_search" ValueChanged="OnSearchAsync" Placeholder="@Text.Search" Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search" DebounceInterval="300" Immediate="true" Margin="Margin.Dense"
-                          Variant="Variant.Outlined" Class="mt-0 flex-grow-1" data-testid="inbox-search" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.EditNote" Class="primary-btn side-compose"
+                   Disabled="_sending" OnClick="ComposeAsync" aria-label="@Text.Compose" data-testid="compose"><span class="side-compose-text">@Text.Compose</span></MudButton>
+        <nav class="side-nav">
+            <div class="side-label">@Text.MailSection</div>
+            @foreach (var folder in Enum.GetValues<MailFolder>())
+            {
+                <a href="@FolderHref(folder)" class="@($"side-item {(folder == Folder ? "on" : "")}")" data-testid="side-folder" data-folder="@folder">
+                    <MudIcon Icon="@FolderIcon(folder)" Style="font-size: 18px" />
+                    <span class="flex-grow-1">@Text.Folder(folder)</span>
+                    <span class="side-count">@Count(folder)</span>
+                </a>
+            }
+        </nav>
+        <div class="side-foot">
+            <a class="side-item" href="https://github.com/compilandoideas/ai-engineering-lab/tree/main/experiments/hitl-send-reply" target="_blank" rel="noopener">
+                <MudIcon Icon="@Icons.Custom.Brands.GitHub" Style="font-size: 18px" />
+                <span class="flex-grow-1">@Text.SourceCode</span>
+            </a>
+            <ShellToggles />
+        </div>
+    </aside>
+
+    <section class="@($"mail-panel mail-list {(Selected is null ? "" : "mail-hide-phone")}")" data-testid="inbox">
+        <div class="mail-toolbar">
+            <MudIconButton Icon="@Icons.Material.Outlined.ViewSidebar" Size="Size.Small" Class="tool-btn mail-hide-phone" aria-label="@Text.ToggleSidebar"
+                           OnClick="() => _sidebar = !_sidebar" data-testid="toggle-sidebar" />
+            <MudTextField T="string" Value="_search" ValueChanged="OnSearchAsync" Placeholder="@($"{Text.Search}...")" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Outlined.Search" DebounceInterval="300" Immediate="true" Margin="Margin.Dense"
+                          Variant="Variant.Outlined" Class="mail-search" data-testid="inbox-search" />
             <MudMenu EndIcon="@Icons.Material.Filled.KeyboardArrowDown" Label="@(Folder == MailFolder.All ? Text.Categories : Text.Folder(Folder))"
-                     Variant="Variant.Text" Dense="true" data-testid="categories">
+                     Variant="Variant.Text" Dense="true" Class="mail-categories" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                     data-testid="categories">
                 @foreach (var folder in Enum.GetValues<MailFolder>())
                 {
                     <MudMenuItem Href="@FolderHref(folder)" data-testid="category" data-folder="@folder">
-                        <div class="d-flex align-center gap-4">
+                        <div class="@($"menu-folder {(folder == Folder ? "on" : "")}")">
                             <span class="flex-grow-1">@Text.Folder(folder)</span>
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary">@Count(folder)</MudText>
+                            <span class="menu-count">@Count(folder)</span>
                         </div>
                     </MudMenuItem>
                 }
             </MudMenu>
-            <MudIconButton Icon="@Icons.Material.Filled.Refresh" Size="Size.Small" aria-label="@Text.Refresh" OnClick="ReloadAsync" data-testid="refresh" />
+            <MudIconButton Icon="@Icons.Material.Outlined.Refresh" Size="Size.Small" Class="tool-btn" aria-label="@Text.Refresh"
+                           OnClick="ReloadAsync" data-testid="refresh" />
         </div>
         @if (_sending)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
         }
-        <div class="mail-scroll">
+        <div class="mail-scroll mail-rows">
             @if (_emails.Count == 0)
             {
-                <MudText Class="mud-text-secondary pa-4">@Text.NoEmails</MudText>
+                <p class="mail-empty">@Text.NoEmails</p>
             }
-            @foreach (var email in _emails)
+            @foreach (var row in _emails)
             {
-                var waiting = email.Reply is { Status: ReplyStatus.Pending } && !Lost(email);
-                <a href="@EmailHref(email.Id)" class="@($"mail-row {(email.Id == EmailId ? "selected" : "")}")" data-testid="mail-row" data-subject="@email.Subject">
-                    <MudAvatar Size="Size.Medium" Variant="Variant.Outlined" Class="mail-avatar">@Initial(email.From)</MudAvatar>
-                    <div class="mail-row-text">
-                        <div class="d-flex align-center gap-2">
-                            <MudText Typo="Typo.body2" Class="@($"mail-ellipsis {(waiting ? "mail-strong" : "")}")">@email.From</MudText>
+                var waiting = row.Reply is { Status: ReplyStatus.Pending } && !Lost(row);
+                <a href="@EmailHref(row.Id)" class="@($"mail-row {(row.Id == EmailId ? "selected" : "")}")" data-testid="mail-row" data-subject="@row.Subject">
+                    <span class="@($"mail-avatar {Senders.Tint(row.From)}")">@Senders.Initial(row.From)</span>
+                    <span class="mail-row-text">
+                        <span class="mail-row-line">
+                            <span class="mail-sender">@Senders.DisplayName(row.From)</span>
                             @if (waiting)
                             {
                                 <span class="mail-dot" title="@Text.ReplyPending"></span>
                             }
-                            <MudSpacer />
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary text-nowrap">@When(email.ReceivedAt)</MudText>
-                        </div>
-                        <MudText Typo="Typo.body2" Class="@($"mail-ellipsis {(waiting ? "mail-strong" : "")}")">@email.Subject</MudText>
-                        <MudText Typo="Typo.caption" Class="mail-ellipsis mud-text-secondary d-block">@email.Body</MudText>
-                        <div class="d-flex flex-wrap align-center gap-1 mt-1">
-                            <EmailStatusChip Status="email.Status" Lost="Lost(email)" />
-                            @* A lost run's reply can no longer be decided: "waiting for a person" would be false. *@
-                            @if (email.Reply is { } reply && !(Lost(email) && reply.Status == ReplyStatus.Pending))
-                            {
-                                <ReplyStatusChip Reply="reply" />
-                            }
-                        </div>
-                    </div>
+                            <span class="mail-date">@Senders.When(row.ReceivedAt, Text.Code)</span>
+                        </span>
+                        <span class="mail-row-line">
+                            <span class="mail-subject">@row.Subject</span>
+                            <StatusMark Email="row" Lost="Lost(row)" />
+                        </span>
+                    </span>
+                    @* Where the email and its reply stand, for tests and assistive tech; the row shows it as a mark. *@
+                    <span hidden data-testid="email-status" data-status="@row.Status"></span>
+                    @if (row.Reply is { } reply && !(Lost(row) && reply.Status == ReplyStatus.Pending))
+                    {
+                        <span hidden data-testid="reply-status" data-status="@reply.Status" data-edited="@reply.Edited.ToString().ToLowerInvariant()"></span>
+                    }
                 </a>
             }
         </div>
-    </MudPaper>
+    </section>
 
-    <MudPaper Outlined="true" Class="@($"mail-panel mail-reader {(Selected is null ? "mail-hide-phone" : "")}")" data-testid="mail-pane">
+    <section class="@($"mail-panel mail-reader {(Selected is null ? "mail-hide-phone" : "")}")" data-testid="mail-pane">
+        <div class="mail-toolbar">
+            @if (Selected is { } open)
+            {
+                <MudIconButton Href="@FolderHref(Folder)" Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" Class="tool-btn mail-show-phone"
+                               aria-label="@Text.BackToInbox" />
+                <MudIconButton Href="@(Neighbour(-1) is { } previous ? EmailHref(previous.Id) : null)" Disabled="@(Neighbour(-1) is null)"
+                               Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" Class="tool-btn" aria-label="@Text.Previous" data-testid="previous" />
+                <MudIconButton Href="@(Neighbour(1) is { } next ? EmailHref(next.Id) : null)" Disabled="@(Neighbour(1) is null)"
+                               Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" Class="tool-btn" aria-label="@Text.Next" data-testid="next" />
+                <EmailStatusChip Status="open.Status" Lost="Lost(open)" />
+                @if (open.RunId is not null && open.Detail is null)
+                {
+                    <MudTooltip Text="@Text.WhyItStopped">
+                        <MudIconButton Icon="@(_trace ? Icons.Material.Outlined.VisibilityOff : Icons.Material.Outlined.Visibility)" Size="Size.Small"
+                                       Class="@($"tool-btn {(_trace ? "on" : "")}")" aria-label="@Text.WhyItStopped" OnClick="() => _trace = !_trace"
+                                       data-testid="trace-toggle" />
+                    </MudTooltip>
+                }
+            }
+            <span class="flex-grow-1"></span>
+        </div>
         @if (Selected is not { } email)
         {
-            <div class="d-flex flex-column align-center justify-center mud-text-secondary flex-grow-1" style="min-height: 320px">
-                <MudIcon Icon="@Icons.Material.Outlined.Email" Size="Size.Large" Class="mb-2" />
-                <MudText>@Text.PickEmail</MudText>
+            <div class="mail-placeholder">
+                <MudIcon Icon="@Icons.Material.Outlined.MarkEmailRead" />
+                <span>@Text.PickEmail</span>
             </div>
         }
         else
         {
-            <div class="mail-toolbar">
-                <MudIconButton Href="@FolderHref(Folder)" Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" Class="mail-show-phone"
-                               aria-label="@Text.BackToInbox" />
-                <MudIconButton Href="@(Neighbour(-1) is { } previous ? EmailHref(previous.Id) : null)" Disabled="@(Neighbour(-1) is null)"
-                               Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" aria-label="@Text.Previous" data-testid="previous" />
-                <MudIconButton Href="@(Neighbour(1) is { } next ? EmailHref(next.Id) : null)" Disabled="@(Neighbour(1) is null)"
-                               Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" aria-label="@Text.Next" data-testid="next" />
-                <EmailStatusChip Status="email.Status" Lost="Lost(email)" />
-            </div>
-            <div class="mail-scroll px-6 pb-6">
-                <MudText Typo="Typo.h5" Class="mb-2" data-testid="mail-subject">@email.Subject</MudText>
-                <div class="d-flex flex-wrap align-center gap-2 mb-5">
+            <div class="mail-scroll mail-read">
+                <h1 class="mail-title" data-testid="mail-subject">@email.Subject</h1>
+                <div class="mail-tags">
+                    <span class="mail-tag-icon"><MudIcon Icon="@Icons.Material.Outlined.SupportAgent" Size="Size.Small" /></span>
+                    <span class="mail-tag-sep"></span>
                     @if (email.TicketId is { } ticket)
                     {
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.ConfirmationNumber">@ticket</MudChip>
+                        <span class="mail-tag"><MudIcon Icon="@Icons.Material.Outlined.ConfirmationNumber" Size="Size.Small" />@ticket</span>
                     }
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Person">@email.From</MudChip>
+                    <span class="mail-tag">
+                        <span class="@($"mail-avatar xs {Senders.Tint(email.From)}")">@Senders.Initial(email.From)</span>@Senders.DisplayName(email.From)
+                    </span>
                 </div>
 
-                <MudDivider Class="mb-4" />
-                <div class="d-flex align-center gap-3 mb-3">
-                    <MudAvatar Size="Size.Medium" Variant="Variant.Outlined">@Initial(email.From)</MudAvatar>
-                    <div class="flex-grow-1 mail-ellipsis">
-                        <MudText Typo="Typo.body2"><b>@email.From</b></MudText>
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.ToLabel: @email.To</MudText>
+                <div class="mail-divider"></div>
+                <div class="mail-head">
+                    <span class="@($"mail-avatar {Senders.Tint(email.From)}")">@Senders.Initial(email.From)</span>
+                    <div class="mail-head-text">
+                        <div><span class="mail-head-name">@Senders.DisplayName(email.From)</span> <span class="mail-head-address">&lt;@email.From&gt;</span></div>
+                        <div class="mail-head-to">@Text.ToLabel: @email.To</div>
                     </div>
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary text-nowrap">@email.ReceivedAt.ToLocalTime().ToString("dd MMM HH:mm")</MudText>
+                    <span class="mail-head-time">@Senders.Stamp(email.ReceivedAt, Text.Code)</span>
                 </div>
-                <div class="mail-body mb-6">
-                    <MudText Typo="Typo.body1" Class="draft-text" data-testid="mail-body">@email.Body</MudText>
+                <div class="mail-body">
+                    <p class="draft-text" data-testid="mail-body">@email.Body</p>
                 </div>
 
                 @if (email.Status is EmailStatus.NotifyFailed or EmailStatus.Received)
                 {
-                    <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">@email.Detail</MudAlert>
-                    <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Refresh"
-                               OnClick="() => RetryAsync(email)" data-testid="retry">@Text.Retry</MudButton>
+                    <div class="mail-notice error">
+                        <MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" />
+                        <span class="flex-grow-1">@email.Detail</span>
+                        <MudButton Variant="Variant.Outlined" Size="Size.Small" Class="ghost-btn" StartIcon="@Icons.Material.Filled.Refresh"
+                                   OnClick="() => RetryAsync(email)" data-testid="retry">@Text.Retry</MudButton>
+                    </div>
                 }
                 else if (email.RunId is null || email.Detail is not null)
                 {
-                    <MudAlert Severity="Severity.Info" Dense="true">@email.Detail</MudAlert>
+                    <div class="mail-notice">
+                        <MudIcon Icon="@Icons.Material.Outlined.Info" Size="Size.Small" />
+                        <span>@email.Detail</span>
+                    </div>
                 }
                 else
                 {
-                    <MailReply RunId="@email.RunId" Subject="@email.Subject" OnDecided="ReloadAsync" />
+                    <MailReply RunId="@email.RunId" Subject="@email.Subject" OnDecided="ReloadAsync" @bind-ShowTrace="_trace" />
                 }
             </div>
         }
-    </MudPaper>
+    </section>
 </div>
 
 @code {
@@ -152,6 +204,8 @@
     private MailFolder? _loadedFolder;
     private string? _search;
     private bool _sending;
+    private bool _sidebar = true;
+    private bool _trace;
     private readonly CancellationTokenSource _stop = new();
 
     // The open email stays open when a decision moves it out of the category on screen.
@@ -175,6 +229,16 @@
     private string FolderHref(MailFolder folder) => $"inbox{FolderQuery(folder)}";
 
     private string EmailHref(Guid id) => $"inbox/{id}{FolderQuery(Folder)}";
+
+    private static string FolderIcon(MailFolder folder) => folder switch
+    {
+        MailFolder.All => Icons.Material.Outlined.Inbox,
+        MailFolder.Review => Icons.Material.Outlined.RateReview,
+        MailFolder.Agent => Icons.Material.Outlined.AutoAwesome,
+        MailFolder.Sent => Icons.Material.Outlined.Send,
+        MailFolder.NotSent => Icons.Material.Outlined.Block,
+        _ => Icons.Material.Outlined.ErrorOutline,
+    };
 
     private int Count(MailFolder folder) => _folders.FirstOrDefault(f => f.Folder == folder)?.Count ?? 0;
 
@@ -281,14 +345,6 @@
     {
         await Mailbox.RetryAsync(row.Id);
         await ReloadAsync();
-    }
-
-    private static string Initial(string from) => from.Length > 0 ? from[..1].ToUpperInvariant() : "?";
-
-    private static string When(DateTimeOffset at)
-    {
-        var local = at.ToLocalTime();
-        return local.Date == DateTime.Today ? local.ToString("HH:mm") : local.ToString("dd MMM");
     }
 
     public async ValueTask DisposeAsync()

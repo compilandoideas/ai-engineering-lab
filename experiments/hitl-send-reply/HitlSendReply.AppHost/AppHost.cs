@@ -27,7 +27,11 @@ var api = builder.AddProject<Projects.HitlSendReply_Api>("api")
     })
     .WithHttpHealthCheck("/health");
 
+// Without a model key the agent is scripted, so the demo inbox costs nothing: seed it then.
+var liveModel = new[] { "OPENAI_API_KEY", "LAB_LLM_API_KEY" }.Any(name => Environment.GetEnvironmentVariable(name) is { Length: > 0 });
+
 builder.AddProject<Projects.HitlSendReply_Web>("web")
+    .WithEnvironment("Mailbox__DemoSeed", liveModel ? "false" : "true")
     .WithReference(api)
     .WaitFor(api)
     .WithReference(mailbox)

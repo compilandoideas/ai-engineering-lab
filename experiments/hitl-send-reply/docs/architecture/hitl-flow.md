@@ -30,15 +30,23 @@ customer message ──► Agent (LLM) ──► send_reply(ticketId, text)
 
 ## The review screen
 
-The inbox is laid out like a mail client, in two panels: the list on the left, the open email on
-the right. "Categories" filters the list by where each email stands, with a count for each: all, to
-review, with the agent, sent, blocked or rejected, with errors. A dot marks what waits for a person,
-where a mail client marks "unread".
+The inbox is laid out like a mail client: a sidebar, the list and the open email. The sidebar has
+"New email", the categories with a count for each (all, to review, with the agent, sent, not sent,
+with errors), and language and theme at the bottom; on a phone it folds into a bar on top, and the
+list and the open email take turns. "Categories" next to the search filters the same way. A blue dot
+marks what waits for a person, where a mail client marks "unread"; a small mark at the end of the
+row says the rest (sent, edited, not sent, no ticket, error).
+
+Without a model key the AppHost seeds a demo inbox of ten customer emails in English and Spanish
+(`DemoMailboxSeeder`, `Mailbox:DemoSeed`): replies already sent, replies waiting for a person, a
+prompt injection held for review, an old ticket that was blocked and mail from senders with no
+ticket. They are replaced and handed to the agent again on each start, because the Agent API keeps
+runs in memory.
 
 The review lives in the reply composer under the email: one sentence on top says why the reply
 stopped and what is asked ("the judge found that the reply makes a commitment… it needs your
 approval"), then the composer with "To" locked to the ticket's address, "Re:" and the subject, the
-agent's draft as the body, and three actions at the bottom:
+agent's draft as the body, and three actions at the bottom (keys a, e and r):
 
 - **Approve** sends exactly the text shown.
 - **Edit** sends the reviewer's own version. It goes through the deterministic rules again
@@ -51,13 +59,17 @@ agent's draft as the body, and three actions at the bottom:
 
 Once decided, the reply shows as the next message of the thread, from Support.
 
-"Why it stopped and what happened" opens the policy trace stage by stage and the audit trail. Stage,
+"Details" in that sentence, or the eye in the toolbar, opens the policy trace stage by stage and the audit trail. Stage,
 outcome and status names are translated on the screen; the API keeps its English names because the
 audit and the agent use them.
 
 ![A reply waiting for a person in the inbox](../images/inbox-awaiting-1440-light.png)
 
 ![The reviewer edits the draft](../images/inbox-edit-1440-light.png)
+
+![The policy trace and the audit trail, opened from Details](../images/inbox-details-1440-light.png)
+
+![The same inbox in dark mode](../images/inbox-awaiting-1440-dark.png)
 
 
 The trace is derived from the stage that decided: the policy runs its checks in a fixed order and
@@ -87,6 +99,7 @@ judge output can turn a failed deterministic check into auto-send; dataset sanit
 The scenarios also play the agent in the inbox when no model key is set: the ticket an email
 matches picks its scenario.
 
-Evidence: [`tests/last-run.txt`](../../tests/last-run.txt) (168 passed) and the screenshots in
-[`docs/images/`](../images/), saved by `tests/e2e/smoke.mjs`, which sends emails through the inbox
-in a real browser, approves one reply and edits another.
+Evidence: [`tests/last-run.txt`](../../tests/last-run.txt) (174 passed) and the screenshots in
+[`docs/images/`](../images/), saved by `tests/e2e/smoke.mjs`, which takes them on the demo inbox, then
+sends emails of its own through the inbox in a real browser, approves one reply and edits another
+(opened with the e key).

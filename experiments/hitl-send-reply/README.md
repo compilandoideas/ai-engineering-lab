@@ -10,8 +10,9 @@ dotnet run --project HitlSendReply.AppHost   # Aspire: Postgres, Agent API :5080
 open http://localhost:5090                   # no API key needed: scripted agent and judge
 ```
 
-Send a new email from `mateo.rojas@example.com` (Spanish) or `li.wang@example.com` (English); the
-agent's reply waits under the email. Full steps, a real model and the browser test:
+The inbox opens with ten demo customer emails in English and Spanish; four replies wait for a
+person under their email. Send a new one from `mateo.rojas@example.com` (Spanish) or
+`li.wang@example.com` (English) to watch the agent draft it. Full steps, a real model and the browser test:
 [docs/guides/run.md](docs/guides/run.md).
 
 **Key result** (blind set, gpt-4.1): no refund, compensation or fault draft escaped; 2 of 20 vague
@@ -24,7 +25,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Core minimal API, a Blazor Web App (WebAssembly, MudBlazor) behind a YARP forwarder, Postgres
 through Aspire, and xUnit. Fictional data in **English and Spanish**.
 
-> Status: experiment, not production code. 168/168 tests ([last run](tests/last-run.txt)).
+> Status: experiment, not production code. 174/174 tests ([last run](tests/last-run.txt)).
 > Real-model runs and judge studies are in [`eval/runs/`](eval/runs/).
 
 ## Documentation

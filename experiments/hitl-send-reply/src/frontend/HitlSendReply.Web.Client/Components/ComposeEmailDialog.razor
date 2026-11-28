@@ -1,22 +1,37 @@
-@* Writes a simulated inbound email, as a customer would. To is fixed: everything goes to the
-   support inbox. From suggests the sample customers, but any address can be typed. *@
+@* Writes a simulated inbound email, as a customer would, in the same composer as a reply. To is
+   fixed: everything goes to the support inbox. From suggests the sample customers, but any address
+   can be typed. *@
 @inject AgentApiClient Api
 
-<MudDialog data-testid="compose-dialog">
+<MudDialog data-testid="compose-dialog" Class="compose-dialog" TitleClass="compose-title" ContentClass="compose-content" ActionsClass="compose-actions">
+    <TitleContent>@Text.Compose</TitleContent>
     <DialogContent>
-        <MudStack Spacing="3" Style="min-width: min(560px, 80vw)">
-            <MudAutocomplete T="string" @bind-Value="_from" Label="@Text.From" Variant="Variant.Outlined"
-                             SearchFunc="SearchCustomersAsync" CoerceValue="true" CoerceText="false"
-                             Immediate="true" data-testid="compose-from" />
-            <MudTextField T="string" Value="@Client.Mailbox.Mailbox.SupportAddress" Label="@Text.To" Variant="Variant.Outlined" ReadOnly="true" />
-            <MudTextField T="string" @bind-Value="_subject" Label="@Text.Subject" Variant="Variant.Outlined" Immediate="true" data-testid="compose-subject" />
-            <MudTextField T="string" @bind-Value="_body" Label="@Text.Body" Variant="Variant.Outlined" Lines="8" Immediate="true" data-testid="compose-body" />
-        </MudStack>
+        <div class="mail-composer flat">
+            <div class="composer-row">
+                <span class="composer-label">@Text.From:</span>
+                <MudAutocomplete T="string" @bind-Value="_from" Variant="Variant.Text" Underline="false" Placeholder="customer@example.com"
+                                 SearchFunc="SearchCustomersAsync" CoerceValue="true" CoerceText="false" Margin="Margin.Dense"
+                                 Immediate="true" Class="composer-field" data-testid="compose-from" />
+            </div>
+            <div class="composer-row">
+                <span class="composer-label">@Text.ToLabel:</span>
+                <span class="composer-chip">@Client.Mailbox.Mailbox.SupportAddress</span>
+            </div>
+            <div class="composer-row">
+                <span class="composer-label">@Text.Subject:</span>
+                <MudTextField T="string" @bind-Value="_subject" Variant="Variant.Text" Underline="false" Margin="Margin.Dense" Immediate="true"
+                              Class="composer-field" data-testid="compose-subject" />
+            </div>
+            <div class="composer-body">
+                <MudTextField T="string" @bind-Value="_body" Variant="Variant.Text" Underline="false" Lines="7" Immediate="true"
+                              Placeholder="@Text.Body" Class="composer-input" data-testid="compose-body" />
+            </div>
+        </div>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="() => Dialog.Cancel()">@Text.Cancel</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send"
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Send" Class="primary-btn"
                    Disabled="!CanSend" OnClick="Send" data-testid="compose-send">@Text.Send</MudButton>
+        <MudButton Variant="Variant.Outlined" Class="ghost-btn" OnClick="() => Dialog.Cancel()">@Text.Cancel</MudButton>
     </DialogActions>
 </MudDialog>
 

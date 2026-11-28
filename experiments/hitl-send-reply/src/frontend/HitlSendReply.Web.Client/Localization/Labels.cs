@@ -54,7 +54,13 @@ public sealed record Labels(
     string AgentDraft,
     string SupportName,
     string RecipientLocked,
-    string RejectWithReason)
+    string RejectWithReason,
+    string MailSection,
+    string SourceCode,
+    string ToggleSidebar,
+    string Details,
+    string HideDetails,
+    string DraftedByAgent)
 {
     public string Folder(HitlSendReply.Web.Client.Mailbox.MailFolder folder) => Folders[folder];
 
@@ -119,7 +125,13 @@ public sealed record Labels(
         AgentDraft: "Draft by the agent: nothing is sent until you decide.",
         SupportName: "Support",
         RecipientLocked: "from the ticket",
-        RejectWithReason: "Reject with this reason");
+        RejectWithReason: "Reject with this reason",
+        MailSection: "Mail",
+        SourceCode: "Source code",
+        ToggleSidebar: "Show or hide the sidebar",
+        Details: "Details",
+        HideDetails: "Hide details",
+        DraftedByAgent: "Drafted by the agent");
 
     public static readonly Labels Es = new(
         Code: "es",
@@ -172,7 +184,7 @@ public sealed record Labels(
             [HitlSendReply.Web.Client.Mailbox.MailFolder.Review] = "Por revisar",
             [HitlSendReply.Web.Client.Mailbox.MailFolder.Agent] = "Con el agente",
             [HitlSendReply.Web.Client.Mailbox.MailFolder.Sent] = "Enviados",
-            [HitlSendReply.Web.Client.Mailbox.MailFolder.NotSent] = "Bloqueados o rechazados",
+            [HitlSendReply.Web.Client.Mailbox.MailFolder.NotSent] = "No enviados",
             [HitlSendReply.Web.Client.Mailbox.MailFolder.Failed] = "Con error",
         },
         Refresh: "Actualizar",
@@ -182,5 +194,11 @@ public sealed record Labels(
         AgentDraft: "Borrador del agente: no se envía nada hasta que decidas.",
         SupportName: "Soporte",
         RecipientLocked: "sale del ticket",
-        RejectWithReason: "Rechazar con esta razón");
+        RejectWithReason: "Rechazar con esta razón",
+        MailSection: "Correo",
+        SourceCode: "Código fuente",
+        ToggleSidebar: "Mostrar u ocultar la barra lateral",
+        Details: "Detalles",
+        HideDetails: "Ocultar detalles",
+        DraftedByAgent: "Borrador del agente");
 }

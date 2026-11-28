@@ -1,0 +1,29 @@
+@* Where a row stands, as one small mark at the end of its subject line. A reply waiting for a person
+   has the blue dot next to the sender instead, the way a mail client marks unread mail. *@
+
+@if (Mark is var (icon, css, title) && icon.Length > 0)
+{
+    <span class="@($"mail-mark {css}")" title="@title"><MudIcon Icon="@icon" Style="font-size: 15px" /></span>
+}
+
+@code {
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    [Parameter, EditorRequired] public EmailRowDto Email { get; set; } = default!;
+
+    [Parameter] public bool Lost { get; set; }
+
+    private (string Icon, string Css, string Title) Mark => Email switch
+    {
+        _ when Lost => (Icons.Material.Outlined.CloudOff, "muted", Text.RunLost),
+        { Reply: { Status: ReplyStatus.Pending } } => ("", "", ""),
+        { Reply: { Status: ReplyStatus.Approved, Edited: true } } => (Icons.Material.Outlined.EditNote, "ok", $"{Text.ReplyApproved}, {Text.EditedBy} {Email.Reply.Reviewer}"),
+        { Status: EmailStatus.Sent } => (Icons.Material.Outlined.DoneAll, "ok", Text.Name(Email.Status)),
+        { Reply: { Status: ReplyStatus.Rejected } } => (Icons.Material.Outlined.Block, "muted", Text.ReplyRejected),
+        { Status: EmailStatus.Blocked } => (Icons.Material.Outlined.Block, "muted", Text.Name(Email.Status)),
+        { Status: EmailStatus.NotifyFailed or EmailStatus.RunFailed } => (Icons.Material.Outlined.ErrorOutline, "bad", Text.Name(Email.Status)),
+        { Status: EmailStatus.Notified or EmailStatus.Received } => (Icons.Material.Outlined.AutoAwesome, "busy", Text.Name(Email.Status)),
+        { Status: EmailStatus.Unmatched } => (Icons.Material.Outlined.LinkOff, "muted", Text.Name(Email.Status)),
+        _ => ("", "", ""),
+    };
+}

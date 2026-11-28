@@ -114,7 +114,7 @@ src/frontend/HitlSendReply.Web/        serves the client, forwards /api with YAR
   Mailbox/      simulated inbox: InboundEmail, EmailReply, MailboxDbContext + migrations, webhook notifier,
                 PendingReplyTracker, endpoints
 src/frontend/HitlSendReply.Web.Client/ the screens: Pages/Inbox (the mail-style inbox), Components/, Api/, Mailbox/, Localization/
-tests/HitlSendReply.Tests/        168 tests, one folder per area; Support/ holds the seven designed scenarios (they run in EN and ES;
+tests/HitlSendReply.Tests/        174 tests, one folder per area; Support/ holds the seven designed scenarios (they run in EN and ES;
                                   Mailbox/ runs against Postgres in Testcontainers; skipped, with the reason, without Docker)
 HitlSendReply.AppHost/            Aspire: postgres (database "mailbox"), api, web
 HitlSendReply.ServiceDefaults/    telemetry, /health and /alive, service discovery, resilience

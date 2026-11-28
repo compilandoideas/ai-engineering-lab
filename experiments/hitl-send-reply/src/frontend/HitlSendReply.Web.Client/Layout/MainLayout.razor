@@ -5,24 +5,14 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
+@* No app bar: the mail client is the whole page. Language and theme sit in the reader's toolbar. *@
 <MudLayout>
-    <MudAppBar Elevation="0" Dense="true" Class="app-bar">
-        <MudText Typo="Typo.h6" Class="mr-6 d-none d-sm-flex">HITL send_reply</MudText>
-        <MudNavLink Href="inbox" Class="top-link" data-testid="nav-inbox">@Text.NavInbox</MudNavLink>
-        <MudSpacer />
-        <MudToggleGroup T="string" @bind-Value="_lang" Size="Size.Small" Outlined="true" data-testid="lang">
-            <MudToggleItem Value="@("en")" Text="EN" />
-            <MudToggleItem Value="@("es")" Text="ES" />
-        </MudToggleGroup>
-        <MudIconButton Icon="@(_dark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                       aria-label="@Text.DarkMode" data-testid="theme" OnClick="() => _dark = !_dark" />
-    </MudAppBar>
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.False" Class="py-4 px-2 px-sm-4">
+    <MudMainContent Class="app-main">
+        <CascadingValue Value="this">
             <CascadingValue Value="Text">
                 @Body
             </CascadingValue>
-        </MudContainer>
+        </CascadingValue>
     </MudMainContent>
 </MudLayout>
 
@@ -33,17 +23,84 @@
 </div>
 
 @code {
-    // Quiet chrome: the app bar is the page surface, color is kept for the outcome and the main action.
+    // Zinc grays, one blue accent, 1 px borders instead of shadows, 13 px type. The system font first
+    // (SF Pro on a Mac, Segoe UI on Windows); Inter, served by the app, where there is none.
+    private static readonly string[] Font = ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Inter", "Roboto", "Helvetica Neue", "Arial", "sans-serif"];
+
     private static readonly MudTheme Theme = new()
     {
-        PaletteLight = new PaletteLight { AppbarBackground = "#ffffff", AppbarText = "rgba(0,0,0,0.87)" },
-        PaletteDark = new PaletteDark { AppbarBackground = "#27272f", AppbarText = "rgba(255,255,255,0.80)" },
-        // Buttons in sentence case, not Material's uppercase.
-        Typography = new Typography { Button = new ButtonTypography { TextTransform = "none", FontWeight = "500" } },
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#3b82f6",
+            PrimaryDarken = "#2563eb",
+            Error = "#dc2626",
+            Success = "#16a34a",
+            Warning = "#d97706",
+            Info = "#3b82f6",
+            Background = "#f4f4f5",
+            BackgroundGray = "#f4f4f5",
+            Surface = "#ffffff",
+            TextPrimary = "#09090b",
+            TextSecondary = "#71717a",
+            LinesDefault = "#e4e4e7",
+            LinesInputs = "#e4e4e7",
+            Divider = "#ececee",
+            ActionDefault = "#71717a",
+            AppbarBackground = "#ffffff",
+            DrawerBackground = "#ffffff",
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#2563eb",
+            PrimaryDarken = "#1d4ed8",
+            Error = "#ef4444",
+            Success = "#22c55e",
+            Warning = "#f59e0b",
+            Info = "#3b82f6",
+            Background = "#09090b",
+            BackgroundGray = "#27272a",
+            Surface = "#09090b",
+            TextPrimary = "#fafafa",
+            TextSecondary = "#a1a1aa",
+            LinesDefault = "#27272a",
+            LinesInputs = "#27272a",
+            Divider = "#27272a",
+            ActionDefault = "#a1a1aa",
+            AppbarBackground = "#09090b",
+            DrawerBackground = "#18181b",
+        },
+        LayoutProperties = new LayoutProperties { DefaultBorderRadius = "6px" },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography { FontFamily = Font, FontSize = "13px", LineHeight = "1.45", LetterSpacing = "normal" },
+            Body1 = new Body1Typography { FontFamily = Font, FontSize = "13px", LineHeight = "1.45", LetterSpacing = "normal" },
+            Body2 = new Body2Typography { FontFamily = Font, FontSize = "13px", LineHeight = "1.45", LetterSpacing = "normal" },
+            Caption = new CaptionTypography { FontFamily = Font, FontSize = "12px", LetterSpacing = "normal" },
+            H5 = new H5Typography { FontFamily = Font, FontSize = "18px", FontWeight = "400", LineHeight = "1.55", LetterSpacing = "normal" },
+            H6 = new H6Typography { FontFamily = Font, FontSize = "14px", FontWeight = "500", LetterSpacing = "normal" },
+            Subtitle2 = new Subtitle2Typography { FontFamily = Font, FontSize = "13px", FontWeight = "500", LetterSpacing = "normal" },
+            Button = new ButtonTypography { FontFamily = Font, FontSize = "13px", TextTransform = "none", FontWeight = "500", LetterSpacing = "normal", LineHeight = "1.4" },
+        },
     };
 
     private bool _dark;
     private string _lang = "en";
 
+    public bool Dark => _dark;
+
+    public string Lang => _lang;
+
     private Labels Text => _lang == "es" ? Labels.Es : Labels.En;
+
+    public void ToggleDark()
+    {
+        _dark = !_dark;
+        StateHasChanged();
+    }
+
+    public void SetLang(string lang)
+    {
+        _lang = lang;
+        StateHasChanged();
+    }
 }

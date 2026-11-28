@@ -1,0 +1,16 @@
+@* Language and theme, kept small in a toolbar corner instead of an app bar. *@
+
+<div class="shell-toggles">
+    <div class="seg" role="group" aria-label="Language" data-testid="lang">
+        <button type="button" class="@(Shell?.Lang == "en" ? "on" : "")" @onclick='() => Shell?.SetLang("en")'>EN</button>
+        <button type="button" class="@(Shell?.Lang == "es" ? "on" : "")" @onclick='() => Shell?.SetLang("es")'>ES</button>
+    </div>
+    <MudIconButton Icon="@(Shell?.Dark == true ? Icons.Material.Outlined.LightMode : Icons.Material.Outlined.DarkMode)" Size="Size.Small"
+                   Class="tool-btn" aria-label="@Text.DarkMode" data-testid="theme" OnClick="() => Shell?.ToggleDark()" />
+</div>
+
+@code {
+    [CascadingParameter] public Labels Text { get; set; } = Labels.En;
+
+    [CascadingParameter] public HitlSendReply.Web.Client.Layout.MainLayout? Shell { get; set; }
+}

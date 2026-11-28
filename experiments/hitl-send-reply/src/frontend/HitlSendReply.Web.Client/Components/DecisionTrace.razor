@@ -1,7 +1,7 @@
 @* The policy runs its checks in a fixed order and stops at the first one that decides.
    Stages before it passed, stages after it were never reached. *@
 
-<MudText Typo="Typo.overline">@Text.PolicyTrace</MudText>
+<div class="trace-label">@Text.PolicyTrace</div>
 <MudList T="string" Dense="true" Padding="false" data-testid="trace">
     @foreach (var stage in Stages)
     {
@@ -11,7 +11,7 @@
                 <MudText Typo="Typo.body2">@Text.Name(stage)</MudText>
                 @if (state == StageState.Decided)
                 {
-                    <MudChip T="string" Size="Size.Small" Color="Outcomes.ColorOf(Decision.Outcome)" data-testid="outcome" data-outcome="@Decision.Outcome">@Text.Name(Decision.Outcome)</MudChip>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Outcomes.ColorOf(Decision.Outcome)" data-testid="outcome" data-outcome="@Decision.Outcome">@Text.Name(Decision.Outcome)</MudChip>
                 }
                 else
                 {
@@ -21,7 +21,7 @@
         </MudListItem>
     }
 </MudList>
-<MudAlert Severity="@SeverityOf(Decision.Outcome)" Dense="true" Class="mt-2" data-testid="reason">@Text.Reason(Decision.Reason)</MudAlert>
+<div class="@($"mail-notice mt-2 {ToneOf(Decision.Outcome)}")" data-testid="reason"><span>@Text.Reason(Decision.Reason)</span></div>
 
 @code {
     private static readonly string[] Stages = ["Ticket", "Permissions", "Duplicate", "PriorRejection", "Facts", "Judge"];
@@ -59,10 +59,10 @@
         _ => Color.Default,
     };
 
-    private static Severity SeverityOf(string outcome) => outcome switch
+    private static string ToneOf(string outcome) => outcome switch
     {
-        "Block" => Severity.Error,
-        "NeedsHuman" => Severity.Warning,
-        _ => Severity.Success,
+        "Block" => "bad",
+        "NeedsHuman" => "wait",
+        _ => "ok",
     };
 }

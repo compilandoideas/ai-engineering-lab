@@ -1,72 +1,78 @@
 @* The agent's draft, laid out as the reply composer under the email. Approve sends exactly the text
    shown; Edit opens the body so the person sends their own version after the deterministic rules
    check it again; a rejection needs a reason because the agent reads it to rewrite. The recipient
-   comes from the ticket and cannot be changed here. *@
+   comes from the ticket and cannot be changed here. Keys: a approves, e edits, r rejects. *@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
 
 <div class="mail-composer" data-testid="review-panel">
     <div class="composer-row">
         <span class="composer-label">@Text.ToLabel:</span>
-        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Lock"
-                 data-testid="composer-to">@Review.Recipient</MudChip>
-        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.RecipientLocked · @Review.Channel</MudText>
+        <span class="composer-chip" title="@Text.ContractHint" data-testid="composer-to">@Review.Recipient</span>
+        <MudIcon Icon="@Icons.Material.Outlined.Lock" Class="composer-lock" Size="Size.Small" title="@Text.ContractHint" />
+        <span class="flex-grow-1"></span>
+        <span class="composer-cc" title="@Text.ContractHint">Cc</span>
+        <span class="composer-cc" title="@Text.ContractHint">Bcc</span>
     </div>
     <div class="composer-row">
         <span class="composer-label">@Text.Subject:</span>
-        <MudText Typo="Typo.body2" Class="mail-ellipsis">@Text.ReplyPrefix @Subject</MudText>
+        <span class="composer-subject">@Text.ReplyPrefix @Subject</span>
     </div>
     <div class="composer-body">
         @if (_editing)
         {
             <MudTextField T="string" @bind-Value="_edited" Variant="Variant.Text" Underline="false" Sizing="InputSizing.Auto"
-                          Lines="5" Immediate="true" Placeholder="@Text.YourVersion" data-testid="edit-input" />
-            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">@Text.EditHint</MudText>
+                          Lines="4" Immediate="true" Placeholder="@Text.YourVersion" Class="composer-input" data-testid="edit-input" />
+            <p class="composer-hint">@Text.EditHint</p>
         }
         else
         {
-            <MudText Typo="Typo.body1" Class="draft-text" data-testid="draft">@Review.Text</MudText>
-            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-3">@Text.AgentDraft</MudText>
+            <p class="draft-text composer-text" data-testid="draft">@Review.Text</p>
         }
         @if (_rejecting)
         {
-            <MudTextField T="string" @bind-Value="_reason" Label="@Text.RejectReason" Variant="Variant.Outlined"
-                          Lines="2" Immediate="true" Class="mt-3" data-testid="reason-input" />
+            <MudTextField T="string" @bind-Value="_reason" Placeholder="@Text.RejectReason" Variant="Variant.Outlined" Margin="Margin.Dense"
+                          Lines="2" Immediate="true" Class="composer-reason" data-testid="reason-input" />
         }
     </div>
     <div class="composer-actions">
         @if (_editing)
         {
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(Busy || string.IsNullOrWhiteSpace(_edited))"
-                       StartIcon="@Icons.Material.Filled.Send" OnClick="SendEditAsync" data-testid="send-edit">@Text.SendEdited</MudButton>
-            <MudButton Variant="Variant.Outlined" Disabled="Busy" OnClick="() => _editing = false" data-testid="cancel-edit">@Text.Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(Busy || string.IsNullOrWhiteSpace(_edited))" Class="primary-btn"
+                       StartIcon="@Icons.Material.Outlined.Send" OnClick="SendEditAsync" data-testid="send-edit">@Text.SendEdited</MudButton>
+            <MudButton Variant="Variant.Outlined" Disabled="Busy" Class="ghost-btn" OnClick="() => _editing = false" data-testid="cancel-edit">@Text.Cancel</MudButton>
         }
         else if (_rejecting)
         {
-            <MudButton Variant="Variant.Filled" Color="Color.Error" Disabled="@(Busy || string.IsNullOrWhiteSpace(_reason))"
-                       StartIcon="@Icons.Material.Filled.Block" OnClick="RejectAsync" data-testid="reject">@Text.RejectWithReason</MudButton>
-            <MudButton Variant="Variant.Outlined" Disabled="Busy" OnClick="() => _rejecting = false" data-testid="cancel-reject">@Text.Cancel</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Disabled="@(Busy || string.IsNullOrWhiteSpace(_reason))" Class="primary-btn"
+                       StartIcon="@Icons.Material.Outlined.Block" OnClick="RejectAsync" data-testid="reject">@Text.RejectWithReason</MudButton>
+            <MudButton Variant="Variant.Outlined" Disabled="Busy" Class="ghost-btn" OnClick="() => _rejecting = false" data-testid="cancel-reject">@Text.Cancel</MudButton>
         }
         else
         {
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="Busy"
-                       StartIcon="@Icons.Material.Filled.Send" OnClick="ApproveAsync" data-testid="approve">@Text.Approve</MudButton>
-            <MudButton Variant="Variant.Outlined" Disabled="Busy" StartIcon="@Icons.Material.Filled.Edit"
-                       OnClick="StartEdit" data-testid="edit">@Text.Edit</MudButton>
-            <MudButton Variant="Variant.Outlined" Color="Color.Error" Disabled="Busy" StartIcon="@Icons.Material.Filled.Block"
-                       OnClick="() => _rejecting = true" data-testid="start-reject">@Text.Reject</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="Busy" Class="primary-btn"
+                       StartIcon="@Icons.Material.Outlined.Send" OnClick="ApproveAsync" data-testid="approve">@Text.Approve<kbd class="on-primary">a</kbd></MudButton>
+            <MudButton Variant="Variant.Outlined" Disabled="Busy" Class="ghost-btn" StartIcon="@Icons.Material.Outlined.Edit"
+                       OnClick="StartEdit" data-testid="edit">@Text.Edit<kbd>e</kbd></MudButton>
+            <MudButton Variant="Variant.Outlined" Disabled="Busy" Class="ghost-btn" StartIcon="@Icons.Material.Outlined.Block"
+                       OnClick="StartReject" data-testid="start-reject">@Text.Reject<kbd>r</kbd></MudButton>
         }
-        <MudSpacer />
-        <MudTextField T="string" @bind-Value="_reviewer" Label="@Text.Reviewer" Variant="Variant.Outlined" Margin="Margin.Dense"
-                      Class="composer-reviewer mt-0" />
+        <span class="flex-grow-1"></span>
+        <span class="composer-note" title="@Text.AgentDraft"><MudIcon Icon="@Icons.Material.Outlined.AutoAwesome" Style="font-size: 16px" />@Text.DraftedByAgent</span>
     </div>
 </div>
 
 @code {
-    private string _reviewer = "reviewer@example.com";
+    // There is no sign-in yet: every decision is recorded under the demo reviewer.
+    private const string Reviewer = "reviewer@example.com";
+
     private string? _reason;
     private string? _edited;
     private bool _editing;
     private bool _rejecting;
     private string? _callId;
+    private IJSObjectReference? _keys;
+    private DotNetObjectReference<ReviewPanel>? _self;
 
     [CascadingParameter] public Labels Text { get; set; } = Labels.En;
 
@@ -92,6 +98,41 @@
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _self = DotNetObjectReference.Create(this);
+            _keys = await JS.InvokeAsync<IJSObjectReference>("import", "./shortcuts.js");
+            await _keys.InvokeVoidAsync("listen", _self);
+        }
+    }
+
+    /// <summary>Called by shortcuts.js for a key pressed outside a text field.</summary>
+    [JSInvokable]
+    public async Task OnShortcutAsync(string key)
+    {
+        if (Busy || _editing || _rejecting)
+        {
+            return;
+        }
+
+        switch (key)
+        {
+            case "a":
+                await ApproveAsync();
+                break;
+            case "e":
+                StartEdit();
+                break;
+            case "r":
+                StartReject();
+                break;
+        }
+
+        StateHasChanged();
+    }
+
     private void StartEdit()
     {
         _edited ??= Review.Text;
@@ -99,11 +140,35 @@
         _editing = true;
     }
 
-    private Task ApproveAsync() => SendAsync(new ReviewRequest(true, null, _reviewer));
+    private void StartReject()
+    {
+        _editing = false;
+        _rejecting = true;
+    }
 
-    private Task SendEditAsync() => SendAsync(new ReviewRequest(true, null, _reviewer, _edited));
+    private Task ApproveAsync() => SendAsync(new ReviewRequest(true, null, Reviewer));
 
-    private Task RejectAsync() => SendAsync(new ReviewRequest(false, _reason, _reviewer));
+    private Task SendEditAsync() => SendAsync(new ReviewRequest(true, null, Reviewer, _edited));
+
+    private Task RejectAsync() => SendAsync(new ReviewRequest(false, _reason, Reviewer));
 
     private Task SendAsync(ReviewRequest review) => OnReview.InvokeAsync((Review.CallId, review));
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_keys is not null)
+        {
+            try
+            {
+                await _keys.InvokeVoidAsync("stop");
+                await _keys.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // The page is gone.
+            }
+        }
+
+        _self?.Dispose();
+    }
 }

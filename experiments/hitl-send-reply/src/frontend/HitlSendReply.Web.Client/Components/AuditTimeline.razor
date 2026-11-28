@@ -1,6 +1,6 @@
 @* Every step the run recorded, in order: what the policy decided, what a person said, what was sent. *@
 
-<MudText Typo="Typo.overline">@Text.Audit</MudText>
+<div class="trace-label">@Text.Audit</div>
 <MudTimeline TimelineOrientation="TimelineOrientation.Vertical" TimelinePosition="TimelinePosition.Start" data-testid="audit">
     @foreach (var entry in Entries)
     {
@@ -9,7 +9,7 @@
                 <MudText Typo="Typo.body2" data-event="@entry.Event"><b>@Text.Name(entry.Event)</b></MudText>
                 @if (entry.Outcome is not null)
                 {
-                    <MudChip T="string" Size="Size.Small" Color="Outcomes.ColorOf(entry.Outcome)">@Text.Name(entry.Outcome) · @Text.Name(entry.Stage)</MudChip>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Outcomes.ColorOf(entry.Outcome)">@Text.Name(entry.Outcome) · @Text.Name(entry.Stage)</MudChip>
                 }
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">@entry.At.ToLocalTime().ToString("HH:mm:ss") · @entry.Actor · #@Short(entry.TextHash)</MudText>
             </div>

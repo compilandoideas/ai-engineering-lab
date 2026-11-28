@@ -3,23 +3,46 @@
 @implements IAsyncDisposable
 @inject AgentApiClient Api
 
-<div data-testid="mail-reply">
+<div data-testid="mail-reply" class="mail-reply">
     @if (_error is not null)
     {
-        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3" data-testid="error">@_error</MudAlert>
+        <div class="mail-notice error" data-testid="error"><MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" /><span>@_error</span></div>
     }
 
     @if (_run is null || _run.Status == RunStatus.Starting)
     {
-        <MudAlert Severity="Severity.Info" Dense="true" data-testid="starting">@Text.Starting</MudAlert>
+        <div class="mail-notice" data-testid="starting">
+            <MudProgressCircular Indeterminate="true" Size="Size.Small" Style="width: 14px; height: 14px" />
+            <span>@Text.Starting</span>
+        </div>
     }
     else if (_run.Status == RunStatus.Failed)
     {
-        <MudAlert Severity="Severity.Error" Dense="true" data-testid="failed">@Text.RunFailed @_run.Error</MudAlert>
+        <div class="mail-notice error" data-testid="failed"><MudIcon Icon="@Icons.Material.Outlined.ErrorOutline" Size="Size.Small" /><span>@Text.RunFailed @_run.Error</span></div>
     }
     else
     {
-        <MudAlert Severity="@Severity" Dense="true" Class="mb-3" data-testid="summary">@Text.Summary(_run)</MudAlert>
+        @* One line on why the reply is where it is: the judge's or the rule's reason, and what is asked of the person. *@
+        <div class="@($"mail-notice {Tone}")" data-testid="summary">
+            <MudIcon Icon="@ToneIcon" Size="Size.Small" />
+            <span class="flex-grow-1">@Text.Summary(_run)</span>
+            <button type="button" class="notice-link" aria-expanded="@ShowTrace.ToString().ToLowerInvariant()" @onclick="ToggleTraceAsync"
+                    data-testid="why-toggle">@(ShowTrace ? Text.HideDetails : Text.Details)</button>
+        </div>
+
+        @* The policy's trace and the run's audit, opened from the notice or from the eye in the toolbar. *@
+        @if (ShowTrace)
+        {
+            <div class="mail-trace" data-testid="why">
+                @if (LastDecision is { } decision)
+                {
+                    <DecisionTrace Decision="decision" />
+                }
+                <div class="mt-4">
+                    <AuditTimeline Entries="@(_run?.Audit ?? [])" />
+                </div>
+            </div>
+        }
 
         @* Waiting: the draft sits in the reply composer. Decided: the reply is the next message of the thread. *@
         @if (Pending is { } review)
@@ -32,39 +55,27 @@
             @if (Draft is not null)
             {
                 <div class="mail-message" data-testid="sent-message">
-                    <div class="d-flex align-center gap-3 mb-3">
-                        <MudAvatar Size="Size.Medium" Color="Color.Primary"><MudIcon Icon="@Icons.Material.Filled.SupportAgent" /></MudAvatar>
-                        <div class="flex-grow-1 mail-ellipsis">
-                            <MudText Typo="Typo.body2"><b>@Text.SupportName</b> · @(_run.Sent.Count > 0 ? Text.ReplySent : Text.AgentAnswer)</MudText>
+                    <div class="mail-head">
+                        <span class="mail-avatar support"><MudIcon Icon="@Icons.Material.Outlined.SupportAgent" Style="font-size: 18px" /></span>
+                        <div class="mail-head-text">
+                            <div><span class="mail-head-name">@Text.SupportName</span> <span class="mail-head-address">· @(_run?.Sent.Count > 0 ? Text.ReplySent : Text.AgentAnswer)</span></div>
                             @if (Recipient is { } to)
                             {
-                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.ToLabel: @to</MudText>
+                                <div class="mail-head-to">@Text.ToLabel: @to</div>
                             }
                         </div>
-                        @if (_run.Sent.LastOrDefault() is { } sent)
+                        @if (_run?.Sent.LastOrDefault() is { } sent)
                         {
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary">@sent.SentAt.ToLocalTime().ToString("HH:mm")</MudText>
+                            <span class="mail-head-time">@Senders.Stamp(sent.SentAt, Text.Code)</span>
                         }
                     </div>
-                    <div class="mail-body">
-                        <MudText Typo="Typo.body1" Class="draft-text" data-testid="draft">@Draft</MudText>
+                    <div class="mail-body reply">
+                        <p class="draft-text" data-testid="draft">@Draft</p>
                     </div>
                 </div>
             }
         }
 
-        <MudExpansionPanels Outlined="true" Elevation="0" Class="mt-4">
-            <MudExpansionPanel Text="@Text.WhyItStopped" data-testid="why">
-                @if (LastDecision is { } decision)
-                {
-                    <DecisionTrace Decision="decision" />
-                }
-                <div class="mt-4">
-                    @* Rendered later by the panel: by then the run may be reloading. *@
-                    <AuditTimeline Entries="@(_run?.Audit ?? [])" />
-                </div>
-            </MudExpansionPanel>
-        </MudExpansionPanels>
     }
 </div>
 
@@ -75,6 +86,11 @@
 
     /// <summary>The subject of the customer's email, shown as "Re: …" in the composer.</summary>
     [Parameter] public string Subject { get; set; } = "";
+
+    /// <summary>Whether the policy's trace and the audit are open under the notice.</summary>
+    [Parameter] public bool ShowTrace { get; set; }
+
+    [Parameter] public EventCallback<bool> ShowTraceChanged { get; set; }
 
     /// <summary>Raised after a decision, so the list can show the new status at once.</summary>
     [Parameter] public EventCallback OnDecided { get; set; }
@@ -92,7 +108,10 @@
 
     private string? Recipient => Pending?.Recipient ?? _run?.Sent.LastOrDefault()?.Recipient;
 
-    private Severity Severity => Pending is not null ? Severity.Warning : _run?.Sent.Count > 0 ? Severity.Success : Severity.Error;
+    private string Tone => Pending is not null ? "wait" : _run?.Sent.Count > 0 ? "ok" : "bad";
+
+    private string ToneIcon => Pending is not null ? Icons.Material.Outlined.Gavel
+        : _run?.Sent.Count > 0 ? Icons.Material.Outlined.TaskAlt : Icons.Material.Outlined.Block;
 
     private DecisionDto? LastDecision => Pending?.Decision ?? (_run?.Audit.LastOrDefault(e => e.Event == "policy-decision") is { } e
         ? new DecisionDto(e.Outcome ?? "", e.Stage ?? "", e.Reason ?? "")
@@ -119,6 +138,8 @@
             await LoadAsync();
         }
     }
+
+    private Task ToggleTraceAsync() => ShowTraceChanged.InvokeAsync(!ShowTrace);
 
     private async Task LoadAsync()
     {

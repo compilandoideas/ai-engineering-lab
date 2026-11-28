@@ -18,6 +18,7 @@ builder.AddNpgsqlDbContext<MailboxDbContext>("mailbox");
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<MailboxService>();
 builder.Services.AddHostedService<PendingReplyTracker>();
+builder.Services.AddHostedService<DemoMailboxSeeder>();
 builder.Services.AddHttpClient<IRunStatusReader, RunStatusReader>(http => http.BaseAddress = new Uri(agentApi));
 // Replaces the default resilience handler for this client only (the API is experimental in
 // Microsoft.Extensions.Http.Resilience 10.x, hence the pragma).
