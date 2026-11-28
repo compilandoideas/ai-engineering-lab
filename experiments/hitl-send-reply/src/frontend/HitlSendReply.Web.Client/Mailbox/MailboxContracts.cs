@@ -33,4 +33,15 @@ public sealed record EmailReplyDto(
     string? Reason, string? Reviewer, DateTimeOffset CreatedAt, DateTimeOffset? DecidedAt,
     string? FinalText = null, bool Edited = false);
 
-public sealed record EmailPageDto(IReadOnlyList<EmailRowDto> Items, int Total);
+/// <summary>
+/// The inbox categories: where an email stands in the human-in-the-loop flow. Review: a reply waits
+/// for a person. Agent: the agent is drafting. NotSent: blocked, or no ticket matched. Failed: the
+/// email never reached the agent, the run failed, or the agent lost the run.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<MailFolder>))]
+public enum MailFolder { All, Review, Agent, Sent, NotSent, Failed }
+
+public sealed record FolderCountDto(MailFolder Folder, int Count);
+
+/// <summary>One page of the folder asked for, and how many emails every folder holds (with the same search).</summary>
+public sealed record EmailPageDto(IReadOnlyList<EmailRowDto> Items, int Total, IReadOnlyList<FolderCountDto>? Folders = null);

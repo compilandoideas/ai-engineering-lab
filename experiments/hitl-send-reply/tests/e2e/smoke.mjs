@@ -1,7 +1,7 @@
 // Smoke test of the Web app through a real browser. Needs the app running (dotnet run --project HitlSendReply.AppHost).
 // Sends an email from the inbox, waits for the reply to wait for a person (kept in email_replies),
-// approves it, then sends a second one and edits it. Saves screenshots at 1440 and 390 px, light and
-// dark, to docs/images/.
+// opens it from the "To review" category, approves it in the reply composer, then sends a second
+// one and edits it. Saves screenshots at 1440 and 390 px, light and dark, to docs/images/.
 // Usage: node tests/e2e/smoke.mjs [baseUrl]
 // Playwright, from the experiment folder: npm install --no-save playwright && npx playwright install chromium
 import { createRequire } from 'node:module';
@@ -42,6 +42,13 @@ async function composeEmail(subject) {
   await page.locator('[data-testid="compose-body"] textarea, textarea[data-testid="compose-body"]').first().fill('The package arrived damaged. I want my money back.');
 }
 
+// Categories filter the list by where each email stands; the open email stays open across them.
+async function openCategory(folder) {
+  await byId('categories').locator('button').first().click();
+  await page.locator(`[data-testid="category"][data-folder="${folder}"]`).first().click();
+  await page.waitForURL(folder === 'All' ? /\/inbox$/ : new RegExp(`folder=${folder}`));
+}
+
 const rowOf = (subject) => page.locator(`[data-testid="mail-row"][data-subject="${subject}"]`);
 const subject = `Damaged package ${Date.now()}`;
 await page.goto(`${baseUrl}/inbox`);
@@ -53,8 +60,11 @@ const row = rowOf(subject);
 await row.locator('[data-testid="email-status"][data-status="AwaitingReview"]').waitFor({ timeout: 90000 });
 await row.locator('[data-testid="reply-status"][data-status="Pending"]').waitFor({ timeout: 10000 })
   .catch(() => fail('the row should show the reply waiting for a person'));
+await openCategory('Review');
+await row.click();
 await byId('approve').waitFor({ timeout: 30000 });
 await page.locator('.mud-snackbar').waitFor({ state: 'detached', timeout: 10000 }).catch(() => {});
+if ((await byId('composer-to').innerText()).trim() !== 'li.wang@example.com') { fail('the composer should show the ticket\'s address'); }
 if (!/approval/.test(await byId('summary').innerText())) { fail('the reply should say on top that it needs approval'); }
 await shot('inbox-awaiting-1440-light');
 await setDark(true);
@@ -67,6 +77,7 @@ await page.setViewportSize({ width: 1440, height: 1000 });
 
 await byId('approve').click();
 await byId('result').waitFor({ state: 'attached' });
+await openCategory('All');
 await row.locator('[data-testid="reply-status"][data-status="Approved"]').waitFor({ timeout: 15000 })
   .catch(() => fail('the row should show the reply as approved'));
 await row.locator('[data-testid="email-status"][data-status="Sent"]').waitFor({ timeout: 15000 })

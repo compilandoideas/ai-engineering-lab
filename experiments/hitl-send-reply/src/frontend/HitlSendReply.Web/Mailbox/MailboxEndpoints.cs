@@ -29,8 +29,8 @@ public static class MailboxEndpoints
     }
 
     private static async Task<EmailPageDto> ListAsync(MailboxService mailbox, CancellationToken cancellationToken,
-        string? search = null, string? sort = null, bool desc = false, int page = 0, int pageSize = 10) =>
-        await mailbox.ListAsync(new EmailQuery(search, sort, desc, Math.Max(page, 0), Math.Clamp(pageSize, 1, 100)), cancellationToken);
+        string? search = null, string? sort = null, bool desc = false, int page = 0, int pageSize = 10, MailFolder folder = MailFolder.All) =>
+        await mailbox.ListAsync(new EmailQuery(search, sort, desc, Math.Max(page, 0), Math.Clamp(pageSize, 1, 100), folder), cancellationToken);
 
     private static async Task<IResult> GetAsync(Guid id, MailboxService mailbox, CancellationToken cancellationToken) =>
         await mailbox.GetAsync(id, cancellationToken) is { } row ? TypedResults.Ok(row) : TypedResults.NotFound();

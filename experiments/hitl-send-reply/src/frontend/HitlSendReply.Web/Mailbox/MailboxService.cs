@@ -71,13 +71,22 @@ public sealed partial class MailboxService(
                 || EF.Functions.ILike(e.Body, pattern) || (e.TicketId != null && EF.Functions.ILike(e.TicketId, pattern)));
         }
 
+        // Counted before the folder filter, so every category shows how many emails it holds.
+        var byStatus = await emails.GroupBy(e => new { e.Status, Lost = e.Detail == RunGone })
+            .Select(g => new { g.Key.Status, g.Key.Lost, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        var folders = Enum.GetValues<MailFolder>()
+            .Select(f => new FolderCountDto(f, byStatus.Where(s => f == MailFolder.All || FolderOf(s.Status, s.Lost) == f).Sum(s => s.Count)))
+            .ToList();
+
+        emails = InFolder(emails, query.Folder);
         var total = await emails.CountAsync(cancellationToken);
         var page = await Sort(emails, query.Sort, query.Descending)
             .Skip(query.Page * query.PageSize).Take(query.PageSize)
             .ToListAsync(cancellationToken);
 
         await RefreshAsync(page, cancellationToken);
-        return new EmailPageDto(await ToRowsAsync(page, cancellationToken), total);
+        return new EmailPageDto(await ToRowsAsync(page, cancellationToken), total, folders);
     }
 
     /// <summary>
@@ -101,6 +110,28 @@ public sealed partial class MailboxService(
         var latest = replies.GroupBy(r => r.EmailId).ToDictionary(g => g.Key, g => g.MaxBy(r => r.CreatedAt)!);
         return emails.Select(e => e.ToDto() with { Reply = latest.GetValueOrDefault(e.Id)?.ToDto() }).ToList();
     }
+
+    // A run the agent lost (it keeps runs in memory) can no longer be reviewed or finish: it counts as failed.
+    private static MailFolder FolderOf(EmailStatus status, bool lost) => (status, lost) switch
+    {
+        (EmailStatus.AwaitingReview or EmailStatus.Notified, true) => MailFolder.Failed,
+        (EmailStatus.AwaitingReview, _) => MailFolder.Review,
+        (EmailStatus.Notified, _) => MailFolder.Agent,
+        (EmailStatus.Sent, _) => MailFolder.Sent,
+        (EmailStatus.Blocked or EmailStatus.Unmatched, _) => MailFolder.NotSent,
+        _ => MailFolder.Failed,
+    };
+
+    private static IQueryable<InboundEmail> InFolder(IQueryable<InboundEmail> emails, MailFolder folder) => folder switch
+    {
+        MailFolder.Review => emails.Where(e => e.Status == EmailStatus.AwaitingReview && (e.Detail == null || e.Detail != RunGone)),
+        MailFolder.Agent => emails.Where(e => e.Status == EmailStatus.Notified && (e.Detail == null || e.Detail != RunGone)),
+        MailFolder.Sent => emails.Where(e => e.Status == EmailStatus.Sent),
+        MailFolder.NotSent => emails.Where(e => e.Status == EmailStatus.Blocked || e.Status == EmailStatus.Unmatched),
+        MailFolder.Failed => emails.Where(e => e.Status == EmailStatus.NotifyFailed || e.Status == EmailStatus.Received
+            || e.Status == EmailStatus.RunFailed || (InProgress.Contains(e.Status) && e.Detail == RunGone)),
+        _ => emails,
+    };
 
     private static IQueryable<InboundEmail> Sort(IQueryable<InboundEmail> emails, string? sort, bool descending) =>
         (sort?.ToLowerInvariant(), descending) switch
@@ -225,4 +256,4 @@ public sealed partial class MailboxService(
 }
 
 /// <summary>Server-side paging and sorting for the grid. Page is zero-based.</summary>
-public sealed record EmailQuery(string? Search, string? Sort, bool Descending, int Page, int PageSize);
+public sealed record EmailQuery(string? Search, string? Sort, bool Descending, int Page, int PageSize, MailFolder Folder = MailFolder.All);

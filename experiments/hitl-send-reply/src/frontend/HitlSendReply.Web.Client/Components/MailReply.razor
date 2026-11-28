@@ -1,5 +1,5 @@
-@* Under the open email: the reply the agent drafted, what the policy decided and, while it waits
-   for a person, the three actions. Reads the run from the Agent API through the Web server. *@
+@* Under the open email: what the policy decided and the agent's draft in the reply composer, with
+   the three actions while it waits for a person. Reads the run from the Agent API through the Web server. *@
 @implements IAsyncDisposable
 @inject AgentApiClient Api
 
@@ -19,32 +19,38 @@
     }
     else
     {
-        <MudAlert Severity="@Severity" Dense="true" Class="mb-4" data-testid="summary">@Text.Summary(_run)</MudAlert>
-        @if (Pending is null)
-        {
-            <span data-testid="result" hidden></span>
-        }
+        <MudAlert Severity="@Severity" Dense="true" Class="mb-3" data-testid="summary">@Text.Summary(_run)</MudAlert>
 
-        <div class="mail-draft pa-4 mb-4">
-            <div class="d-flex flex-wrap align-center gap-2 mb-2">
-                <MudIcon Icon="@Icons.Material.Filled.SmartToy" Size="Size.Small" Color="Color.Primary" />
-                <MudText Typo="Typo.subtitle2">@(_run.Sent.Count > 0 ? Text.ReplySent : Text.AgentAnswer)</MudText>
-                @if (Recipient is { } to)
-                {
-                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.ToLabel: @to</MudText>
-                }
-            </div>
-            <MudText Typo="Typo.body1" Class="draft-text" data-testid="draft">@Draft</MudText>
-            @if (Pending is not null)
-            {
-                <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">@Text.ContractHint</MudText>
-            }
-        </div>
-
-        @* Once decided, the summary on top says what happened; the box above shows what was sent. *@
+        @* Waiting: the draft sits in the reply composer. Decided: the reply is the next message of the thread. *@
         @if (Pending is { } review)
         {
-            <ReviewPanel Review="review" Busy="_busy" OnReview="ReviewAsync" />
+            <ReviewPanel Review="review" Subject="@Subject" Busy="_busy" OnReview="ReviewAsync" />
+        }
+        else
+        {
+            <span data-testid="result" hidden></span>
+            @if (Draft is not null)
+            {
+                <div class="mail-message" data-testid="sent-message">
+                    <div class="d-flex align-center gap-3 mb-3">
+                        <MudAvatar Size="Size.Medium" Color="Color.Primary"><MudIcon Icon="@Icons.Material.Filled.SupportAgent" /></MudAvatar>
+                        <div class="flex-grow-1 mail-ellipsis">
+                            <MudText Typo="Typo.body2"><b>@Text.SupportName</b> · @(_run.Sent.Count > 0 ? Text.ReplySent : Text.AgentAnswer)</MudText>
+                            @if (Recipient is { } to)
+                            {
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.ToLabel: @to</MudText>
+                            }
+                        </div>
+                        @if (_run.Sent.LastOrDefault() is { } sent)
+                        {
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">@sent.SentAt.ToLocalTime().ToString("HH:mm")</MudText>
+                        }
+                    </div>
+                    <div class="mail-body">
+                        <MudText Typo="Typo.body1" Class="draft-text" data-testid="draft">@Draft</MudText>
+                    </div>
+                </div>
+            }
         }
 
         <MudExpansionPanels Outlined="true" Elevation="0" Class="mt-4">
@@ -66,6 +72,9 @@
     [CascadingParameter] public Labels Text { get; set; } = Labels.En;
 
     [Parameter, EditorRequired] public string RunId { get; set; } = "";
+
+    /// <summary>The subject of the customer's email, shown as "Re: …" in the composer.</summary>
+    [Parameter] public string Subject { get; set; } = "";
 
     /// <summary>Raised after a decision, so the list can show the new status at once.</summary>
     [Parameter] public EventCallback OnDecided { get; set; }

@@ -24,7 +24,7 @@ Built with C# / .NET 10, **Microsoft Agent Framework 1.28.0** (`Microsoft.Agents
 Core minimal API, a Blazor Web App (WebAssembly, MudBlazor) behind a YARP forwarder, Postgres
 through Aspire, and xUnit. Fictional data in **English and Spanish**.
 
-> Status: experiment, not production code. 167/167 tests ([last run](tests/last-run.txt)).
+> Status: experiment, not production code. 168/168 tests ([last run](tests/last-run.txt)).
 > Real-model runs and judge studies are in [`eval/runs/`](eval/runs/).
 
 ## Documentation

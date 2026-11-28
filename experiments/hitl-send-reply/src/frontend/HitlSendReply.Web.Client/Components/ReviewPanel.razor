@@ -1,54 +1,83 @@
-@* What a person decides on one pending review. Approve sends exactly the text shown; Edit sends
-   the person's own version after the deterministic rules check it again; a rejection needs a
-   reason because the agent reads it to rewrite. *@
+@* The agent's draft, laid out as the reply composer under the email. Approve sends exactly the text
+   shown; Edit opens the body so the person sends their own version after the deterministic rules
+   check it again; a rejection needs a reason because the agent reads it to rewrite. The recipient
+   comes from the ticket and cannot be changed here. *@
 
-<MudText Typo="Typo.overline">@Text.Decision</MudText>
-<MudStack Spacing="3" data-testid="review-panel">
-    <MudTextField T="string" @bind-Value="_reviewer" Label="@Text.Reviewer" Variant="Variant.Outlined" Margin="Margin.Dense" />
-    @if (_editing)
-    {
-        <MudTextField T="string" @bind-Value="_edited" Label="@Text.YourVersion" Variant="Variant.Outlined"
-                      Lines="6" Immediate="true" data-testid="edit-input" />
-        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.EditHint</MudText>
-        <div class="d-flex gap-2">
+<div class="mail-composer" data-testid="review-panel">
+    <div class="composer-row">
+        <span class="composer-label">@Text.ToLabel:</span>
+        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Lock"
+                 data-testid="composer-to">@Review.Recipient</MudChip>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">@Text.RecipientLocked · @Review.Channel</MudText>
+    </div>
+    <div class="composer-row">
+        <span class="composer-label">@Text.Subject:</span>
+        <MudText Typo="Typo.body2" Class="mail-ellipsis">@Text.ReplyPrefix @Subject</MudText>
+    </div>
+    <div class="composer-body">
+        @if (_editing)
+        {
+            <MudTextField T="string" @bind-Value="_edited" Variant="Variant.Text" Underline="false" Sizing="InputSizing.Auto"
+                          Lines="5" Immediate="true" Placeholder="@Text.YourVersion" data-testid="edit-input" />
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-2">@Text.EditHint</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.body1" Class="draft-text" data-testid="draft">@Review.Text</MudText>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary d-block mt-3">@Text.AgentDraft</MudText>
+        }
+        @if (_rejecting)
+        {
+            <MudTextField T="string" @bind-Value="_reason" Label="@Text.RejectReason" Variant="Variant.Outlined"
+                          Lines="2" Immediate="true" Class="mt-3" data-testid="reason-input" />
+        }
+    </div>
+    <div class="composer-actions">
+        @if (_editing)
+        {
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(Busy || string.IsNullOrWhiteSpace(_edited))"
                        StartIcon="@Icons.Material.Filled.Send" OnClick="SendEditAsync" data-testid="send-edit">@Text.SendEdited</MudButton>
-            <MudButton Variant="Variant.Text" Disabled="Busy" OnClick="() => _editing = false" data-testid="cancel-edit">@Text.Cancel</MudButton>
-        </div>
-    }
-    else
-    {
-        <div class="d-flex flex-wrap gap-2">
+            <MudButton Variant="Variant.Outlined" Disabled="Busy" OnClick="() => _editing = false" data-testid="cancel-edit">@Text.Cancel</MudButton>
+        }
+        else if (_rejecting)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Disabled="@(Busy || string.IsNullOrWhiteSpace(_reason))"
+                       StartIcon="@Icons.Material.Filled.Block" OnClick="RejectAsync" data-testid="reject">@Text.RejectWithReason</MudButton>
+            <MudButton Variant="Variant.Outlined" Disabled="Busy" OnClick="() => _rejecting = false" data-testid="cancel-reject">@Text.Cancel</MudButton>
+        }
+        else
+        {
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="Busy"
                        StartIcon="@Icons.Material.Filled.Send" OnClick="ApproveAsync" data-testid="approve">@Text.Approve</MudButton>
             <MudButton Variant="Variant.Outlined" Disabled="Busy" StartIcon="@Icons.Material.Filled.Edit"
                        OnClick="StartEdit" data-testid="edit">@Text.Edit</MudButton>
-        </div>
-        <MudDivider />
-        <MudTextField T="string" @bind-Value="_reason" Label="@Text.RejectReason" Variant="Variant.Outlined"
-                      Lines="2" Immediate="true" data-testid="reason-input" />
-        <div>
-            <MudButton Variant="Variant.Outlined" Color="Color.Error" Disabled="@(Busy || string.IsNullOrWhiteSpace(_reason))"
-                       StartIcon="@Icons.Material.Filled.Block" OnClick="RejectAsync" data-testid="reject">@Text.Reject</MudButton>
-        </div>
-    }
-</MudStack>
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" Disabled="Busy" StartIcon="@Icons.Material.Filled.Block"
+                       OnClick="() => _rejecting = true" data-testid="start-reject">@Text.Reject</MudButton>
+        }
+        <MudSpacer />
+        <MudTextField T="string" @bind-Value="_reviewer" Label="@Text.Reviewer" Variant="Variant.Outlined" Margin="Margin.Dense"
+                      Class="composer-reviewer mt-0" />
+    </div>
+</div>
 
 @code {
     private string _reviewer = "reviewer@example.com";
     private string? _reason;
     private string? _edited;
     private bool _editing;
+    private bool _rejecting;
+    private string? _callId;
 
     [CascadingParameter] public Labels Text { get; set; } = Labels.En;
 
     [Parameter, EditorRequired] public PendingReviewDto Review { get; set; } = default!;
 
+    /// <summary>The subject of the customer's email; the reply answers it.</summary>
+    [Parameter] public string Subject { get; set; } = "";
+
     [Parameter] public bool Busy { get; set; }
 
     [Parameter] public EventCallback<(string CallId, ReviewRequest Review)> OnReview { get; set; }
-
-    private string? _callId;
 
     // A new pending review starts clean: no reason, no edit.
     protected override void OnParametersSet()
@@ -59,12 +88,14 @@
             _reason = null;
             _edited = null;
             _editing = false;
+            _rejecting = false;
         }
     }
 
     private void StartEdit()
     {
         _edited ??= Review.Text;
+        _rejecting = false;
         _editing = true;
     }
 

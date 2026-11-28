@@ -36,17 +36,40 @@
     cursor: pointer;
 }
 
-/* Inbox laid out like a mail client: a list, the open email, and the reply under it. */
-.mail-list {
-    width: 100%;
-    max-height: calc(100vh - 120px);
+/* Inbox laid out like a mail client: two panels, the list and the open email, each with its own scroll. */
+.mail-shell {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    gap: 16px;
+    height: calc(100vh - 48px - 32px);
+}
+
+.mail-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.mail-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 
-.mail-row {
-    display: block;
+.mail-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 12px 16px;
-    border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.mail-row {
+    display: flex;
+    gap: 12px;
+    margin: 2px 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
     color: inherit;
     text-decoration: none;
 }
@@ -56,29 +79,115 @@
 }
 
 .mail-row.selected {
-    background: var(--mud-palette-primary-hover);
-    box-shadow: inset 3px 0 0 var(--mud-palette-primary);
+    background: var(--mud-palette-background-gray);
 }
 
-.mail-from,
-.mail-subject {
+.mail-row-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.mail-avatar {
+    flex: 0 0 auto;
+}
+
+.mail-ellipsis {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
-.mail-pane {
-    width: 100%;
-    min-height: 480px;
+.mail-strong {
+    font-weight: 600;
 }
 
-.mail-body,
-.mail-draft {
+/* What waits for a person, where a mail client shows "unread". */
+.mail-dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mud-palette-primary);
+}
+
+.mail-body {
+    padding: 24px;
+    border-radius: 8px;
+    background: var(--mud-palette-background-gray);
+}
+
+.mail-message {
+    margin-top: 8px;
+}
+
+/* The agent's draft, as the reply composer under the email. */
+.mail-composer {
     border: 1px solid var(--mud-palette-lines-default);
     border-radius: 8px;
 }
 
-.mail-draft {
-    border-left: 3px solid var(--mud-palette-primary);
-    background: var(--mud-palette-background-gray);
+.composer-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 4px 16px;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.composer-label {
+    color: var(--mud-palette-text-secondary);
+    flex: 0 0 auto;
+}
+
+.composer-body {
+    padding: 16px;
+    min-height: 120px;
+}
+
+.composer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--mud-palette-lines-default);
+}
+
+.composer-reviewer {
+    max-width: 240px;
+}
+
+.mail-show-phone {
+    display: none !important;
+}
+
+/* On a phone the list and the open email take turns, each at full height. */
+@media (max-width: 959px) {
+    .mail-shell {
+        grid-template-columns: minmax(0, 1fr);
+        height: auto;
+    }
+
+    .mail-panel {
+        overflow: visible;
+    }
+
+    .mail-hide-phone {
+        display: none !important;
+    }
+
+    .mail-show-phone {
+        display: inline-flex !important;
+    }
+
+    .composer-reviewer {
+        max-width: none;
+        width: 100%;
+    }
+}
+
+.mail-toolbar .mud-button-label {
+    white-space: nowrap;
 }
